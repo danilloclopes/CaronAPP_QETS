@@ -13,7 +13,7 @@ import me.br.caronapp.carona.Carona;
 import me.br.caronapp.usuario.Usuario;
 
 /*
- * Author: Sérgio Ricardo
+ * Author: Sï¿½rgio Ricardo
  */
 
 public class StorageManager implements Storable{
@@ -45,6 +45,8 @@ public class StorageManager implements Storable{
 
 	@Override
 	public void carrega(ArrayList<Usuario> listaUsuarios, ArrayList<Carona> listaCaronas) {
+		if (listaUsuarios == null || listaCaronas == null) return;
+
 		try {
 			FileInputStream usuariosFile = new FileInputStream("usuarios.bin");
 			FileInputStream caronasFile = new FileInputStream("caronas.bin");
