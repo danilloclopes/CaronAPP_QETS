@@ -55,3 +55,15 @@ Este documento registra as interações relevantes com ferramentas de IA Generat
 - **Resultado:** O Claude leu o documento e criou test/me/br/caronapp/storage/StorageManagerTest.java, com um método @Test por caso. Como o projeto não tinha infraestrutura de testes, baixou o JUnit para lib/ e ajustou o .classpath. Para isolar o uso dos arquivos fixos usuarios.bin/caronas.bin, os testes movem os .bin existentes para um backup antes de cada teste e os restauram depois. Os 13 testes passaram.
 - **Decisão:** Aceitei a estrutura de testes e o isolamento por backup dos .bin. A classe StorageManager não foi alterada.
 - **Validação:** Executei os testes pelo console do JUnit e conferi que os arquivos usuarios.bin e caronas.bin versionados não foram modificados (git status).
+
+---
+
+### Log #004 - Métodos auxiliares dos testes de HostJoin
+
+- **Responsável:** Ricardo
+- **Atividade:** Criação de métodos auxiliares em `HostJoinTest` para preparar os dados e executar os cenários de teste.
+- **Ferramenta:** ChatGPT
+- **Prompt/Instrução:** Ricardo pediu ajuda para criar testes de `HostJoin` com Mockito, tornar legíveis os dados de exemplo e separar os cenários do método `host()`.
+- **Resultado:** Foram criados os métodos `consoleComEntrada`, `donoFalso`, `enderecoFalso`, `hospedar` e `caronaComUmaVaga`. Eles preparam o `Console` simulado, os objetos de exemplo e a execução das caronas nos testes.
+- **Decisão:** Ricardo utilizou os métodos auxiliares no arquivo de teste para reduzir a repetição dos dados e facilitar a leitura dos casos.
+- **Validação:** Executou `mvn -Dtest=HostJoinTest test`: 15 testes encontrados, sem falhas ou erros.
