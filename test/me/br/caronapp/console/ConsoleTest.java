@@ -294,21 +294,13 @@ public class ConsoleTest {
     @Test
     void CT_U_C_20_draw_lobby_opcaoVerCorridas_deveIrParaVerCorridas() {
         Console console = consoleComEntrada("5\n");
-
+    
         console.setUser(usuarioValido());
         console.setStage(Console.Stage.LOBBY);
-
-        /*
-         * A execução de CaronaManager.verCorridas() pode solicitar
-         * um ID de carona. O valor 999 representa um ID inexistente.
-         */
-        console = consoleComEntrada("5\n999\n");
-        console.setUser(usuarioValido());
-        console.setStage(Console.Stage.LOBBY);
-
+    
         boolean resultado = console.draw();
-
+    
         assertTrue(resultado);
-        assertEquals(Console.Stage.LOBBY, console.getStage());
+        assertEquals(Console.Stage.VER_CORRIDAS, console.getStage());
     }
 }
