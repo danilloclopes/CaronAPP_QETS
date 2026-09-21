@@ -92,6 +92,10 @@ public class Console {
 	public void setStage(Stage stage) {
 		this.stage = stage;
 	}
+
+	public Stage getStage() {
+    return this.stage;
+}
 	
 	public Usuario getUser() {
 		return usuario;
