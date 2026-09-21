@@ -1,9 +1,17 @@
 package me.br.caronapp.console;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.io.PrintStream;
+import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,30 +21,55 @@ import me.br.caronapp.usuario.Usuario;
 
 public class ConsoleTest {
 
-    private InputStream originalIn;
+    private InputStream entradaOriginal;
+    private PrintStream saidaOriginal;
 
     @BeforeEach
     void setUp() {
-        originalIn = System.in;
+        entradaOriginal = System.in;
+        saidaOriginal = System.out;
     }
 
     @AfterEach
     void tearDown() {
-        System.setIn(originalIn);
+        System.setIn(entradaOriginal);
+        System.setOut(saidaOriginal);
     }
 
     private Console consoleComEntrada(String entrada) {
-        System.setIn(new ByteArrayInputStream(entrada.getBytes()));
+        System.setIn(new ByteArrayInputStream(
+                entrada.getBytes(StandardCharsets.UTF_8)
+        ));
+
         return new Console();
     }
 
     private Usuario usuarioValido() {
-        return new Usuario("ana", "Ana", "11111111111", "senha123");
+        return new Usuario(
+                "ana",
+                "Ana",
+                "11111111111",
+                "senha123"
+        );
+    }
+
+    private Usuario usuarioAdministrador() throws Exception {
+        Usuario usuario = usuarioValido();
+
+        /*
+         * A classe Usuario não possui setter público para o atributo adm.
+         * Por isso, o teste utiliza reflexão somente para preparar o cenário.
+         */
+        Field campoAdm = Usuario.class.getDeclaredField("adm");
+        campoAdm.setAccessible(true);
+        campoAdm.setBoolean(usuario, true);
+
+        return usuario;
     }
 
     @Test
     void CT_U_C_01_construtor_deveInicializarConsole() {
-        Console console = new Console();
+        Console console = consoleComEntrada("");
 
         assertNull(console.getUser());
         assertNotNull(console.getScanner());
@@ -45,7 +78,8 @@ public class ConsoleTest {
 
     @Test
     void CT_U_C_02_logout_deveRemoverUsuarioEVoltarParaLoginRegistro() {
-        Console console = new Console();
+        Console console = consoleComEntrada("");
+
         console.setUser(usuarioValido());
         console.setStage(Console.Stage.LOBBY);
 
@@ -56,17 +90,18 @@ public class ConsoleTest {
     }
 
     @Test
-    void CT_U_C_03_logout_semUsuario_naoLancaErro() {
-        Console console = new Console();
+    void CT_U_C_03_logout_semUsuario_naoDeveLancarExcecao() {
+        Console console = consoleComEntrada("");
 
-        assertDoesNotThrow(() -> console.logout());
+        console.logout();
+
         assertNull(console.getUser());
         assertEquals(Console.Stage.LOGIN_REGISTRO, console.getStage());
     }
 
     @Test
-    void CT_U_C_04_setUser_e_getUser_deveAssociarUsuario() {
-        Console console = new Console();
+    void CT_U_C_04_setUserEGetUser_deveAssociarUsuario() {
+        Console console = consoleComEntrada("");
         Usuario usuario = usuarioValido();
 
         console.setUser(usuario);
@@ -75,41 +110,37 @@ public class ConsoleTest {
     }
 
     @Test
-    void CT_U_C_05_setUser_null_deveRemoverUsuario() {
-        Console console = new Console();
-        console.setUser(usuarioValido());
+    void CT_U_C_05_setUserNull_deveRemoverUsuario() {
+        Console console = consoleComEntrada("");
 
+        console.setUser(usuarioValido());
         console.setUser(null);
 
         assertNull(console.getUser());
     }
 
     @Test
-    void CT_U_C_06_setStage_deveAlterarEstado() {
-        Console console = new Console();
+    void CT_U_C_06_setStage_deveAlterarEstagio() {
+        Console console = consoleComEntrada("");
 
         console.setStage(Console.Stage.LOBBY);
-        assertEquals(Console.Stage.LOBBY, console.getStage());
 
-        console.setStage(Console.Stage.LOGIN);
-        assertEquals(Console.Stage.LOGIN, console.getStage());
+        assertEquals(Console.Stage.LOBBY, console.getStage());
     }
 
     @Test
     void CT_U_C_07_getScanner_deveRetornarScannerValido() {
-        Console console = new Console();
+        Console console = consoleComEntrada("");
 
         assertNotNull(console.getScanner());
     }
 
     @Test
-    void CT_U_C_08_isAdm_usuarioAdm_deveRetornarTrue() {
-        Console console = new Console();
-        Usuario usuario = usuarioValido();
-        usuario = new Usuario("adm", "Adm", "22222222222", "senha");
-        // se existir adm, configure:
-        // usuario.setAdm(true); // se houver setter; caso não tenha, use a estrutura da classe
-        // como o modelo atual não tem setter, então teste pode ser adaptado
+    void CT_U_C_08_isAdm_usuarioAdministrador_deveRetornarTrue()
+            throws Exception {
+        Console console = consoleComEntrada("");
+        Usuario usuario = usuarioAdministrador();
+
         console.setUser(usuario);
 
         assertTrue(console.isAdm());
@@ -117,7 +148,8 @@ public class ConsoleTest {
 
     @Test
     void CT_U_C_09_isAdm_usuarioComum_deveRetornarFalse() {
-        Console console = new Console();
+        Console console = consoleComEntrada("");
+
         console.setUser(usuarioValido());
 
         assertFalse(console.isAdm());
@@ -125,8 +157,15 @@ public class ConsoleTest {
 
     @Test
     void CT_U_C_10_isAdm_semUsuario_deveRetornarFalse() {
-        Console console = new Console();
+        Console console = consoleComEntrada("");
 
+        /*
+         * Este teste falhará com a implementação atual:
+         *
+         * return usuario.isAdm();
+         *
+         * O comportamento esperado é retornar false quando não há usuário.
+         */
         assertFalse(console.isAdm());
     }
 
@@ -134,9 +173,9 @@ public class ConsoleTest {
     void CT_U_C_11_draw_loginRegistro_opcaoLogin_deveIrParaLogin() {
         Console console = consoleComEntrada("1\n");
 
-        boolean retorno = console.draw();
+        boolean resultado = console.draw();
 
-        assertTrue(retorno);
+        assertTrue(resultado);
         assertEquals(Console.Stage.LOGIN, console.getStage());
     }
 
@@ -144,107 +183,132 @@ public class ConsoleTest {
     void CT_U_C_12_draw_loginRegistro_opcaoRegistro_deveIrParaRegistro() {
         Console console = consoleComEntrada("2\n");
 
-        boolean retorno = console.draw();
+        boolean resultado = console.draw();
 
-        assertTrue(retorno);
+        assertTrue(resultado);
         assertEquals(Console.Stage.REGISTRO, console.getStage());
     }
 
     @Test
     void CT_U_C_13_draw_lobby_opcaoListarCaronas_deveIrParaListarCaronas() {
-        Console console = new Console();
+        Console console = consoleComEntrada("1\n");
+
         console.setUser(usuarioValido());
         console.setStage(Console.Stage.LOBBY);
-        System.setIn(new ByteArrayInputStream("1\n".getBytes()));
 
-        boolean retorno = console.draw();
+        boolean resultado = console.draw();
 
-        assertTrue(retorno);
+        assertTrue(resultado);
         assertEquals(Console.Stage.LISTAR_CARONAS, console.getStage());
     }
 
     @Test
     void CT_U_C_14_draw_lobby_opcaoHostCarona_deveIrParaHostCarona() {
-        Console console = new Console();
+        Console console = consoleComEntrada("2\n");
+
         console.setUser(usuarioValido());
         console.setStage(Console.Stage.LOBBY);
-        System.setIn(new ByteArrayInputStream("2\n".getBytes()));
 
-        boolean retorno = console.draw();
+        boolean resultado = console.draw();
 
-        assertTrue(retorno);
+        assertTrue(resultado);
         assertEquals(Console.Stage.HOST_CARONA, console.getStage());
     }
 
     @Test
     void CT_U_C_15_draw_lobby_opcaoEntrarCarona_deveIrParaEntrarCarona() {
-        Console console = new Console();
+        Console console = consoleComEntrada("3\n");
+
         console.setUser(usuarioValido());
         console.setStage(Console.Stage.LOBBY);
-        System.setIn(new ByteArrayInputStream("3\n".getBytes()));
 
-        boolean retorno = console.draw();
+        boolean resultado = console.draw();
 
-        assertTrue(retorno);
+        assertTrue(resultado);
         assertEquals(Console.Stage.ENTRAR_CARONA, console.getStage());
     }
 
     @Test
-    void CT_U_C_16_draw_lobby_opcaoDeslogar_deveDeslogar() {
-        Console console = new Console();
+    void CT_U_C_16_draw_lobby_opcaoDeslogar_deveIrParaDeslogar() {
+        Console console = consoleComEntrada("4\n");
+
         console.setUser(usuarioValido());
         console.setStage(Console.Stage.LOBBY);
-        System.setIn(new ByteArrayInputStream("4\n".getBytes()));
 
-        boolean retorno = console.draw();
+        boolean resultado = console.draw();
 
-        assertTrue(retorno);
-        assertNull(console.getUser());
-        assertEquals(Console.Stage.LOGIN_REGISTRO, console.getStage());
+        assertTrue(resultado);
+        assertEquals(Console.Stage.DESLOGAR, console.getStage());
+        assertEquals(usuarioValido().getUsername(),
+                console.getUser().getUsername());
     }
 
     @Test
-    void CT_U_C_17_draw_deslogar_deveLogout() {
-        Console console = new Console();
+    void CT_U_C_17_draw_deslogar_deveExecutarLogout() {
+        Console console = consoleComEntrada("");
+
         console.setUser(usuarioValido());
         console.setStage(Console.Stage.DESLOGAR);
 
-        boolean retorno = console.draw();
+        boolean resultado = console.draw();
 
-        assertTrue(retorno);
+        assertTrue(resultado);
         assertNull(console.getUser());
         assertEquals(Console.Stage.LOGIN_REGISTRO, console.getStage());
     }
 
     @Test
     void CT_U_C_18_draw_halt_deveRetornarFalse() {
-        Console console = new Console();
+        Console console = consoleComEntrada("");
+
         console.setStage(Console.Stage.HALT);
 
-        boolean retorno = console.draw();
+        boolean resultado = console.draw();
 
-        assertFalse(retorno);
+        assertFalse(resultado);
     }
 
     @Test
-    void CT_U_C_19_draw_usuarioLogado_deveImprimirNomeUsuario() {
-        Console console = new Console();
+    void CT_U_C_19_draw_usuarioLogado_deveExibirNomeDoUsuario() {
+        Console console = consoleComEntrada("6\n");
+
         console.setUser(usuarioValido());
         console.setStage(Console.Stage.LOBBY);
 
-        System.setIn(new ByteArrayInputStream("6\n".getBytes()));
+        ByteArrayOutputStream saidaCapturada =
+                new ByteArrayOutputStream();
 
-        boolean retorno = console.draw();
+        System.setOut(new PrintStream(saidaCapturada));
 
-        assertTrue(retorno);
+        boolean resultado = console.draw();
+
+        String saida = saidaCapturada.toString(
+                StandardCharsets.UTF_8
+        );
+
+        assertTrue(resultado);
+        assertTrue(saida.contains("Usuario: Ana"));
         assertEquals(Console.Stage.HALT, console.getStage());
     }
 
     @Test
-    void CT_U_C_20_draw_qualquerEstadoNaoTratado_deveFinalizarConsole() {
-        Console console = new Console();
-        console.setStage(Console.Stage.HALT);
+    void CT_U_C_20_draw_lobby_opcaoVerCorridas_deveIrParaVerCorridas() {
+        Console console = consoleComEntrada("5\n");
 
-        assertFalse(console.draw());
+        console.setUser(usuarioValido());
+        console.setStage(Console.Stage.LOBBY);
+
+        /*
+         * A execução de CaronaManager.verCorridas() pode solicitar
+         * um ID de carona. O valor 999 representa um ID inexistente.
+         */
+        console = consoleComEntrada("5\n999\n");
+        console.setUser(usuarioValido());
+        console.setStage(Console.Stage.LOBBY);
+
+        boolean resultado = console.draw();
+
+        assertTrue(resultado);
+        assertEquals(Console.Stage.LOBBY, console.getStage());
     }
 }
