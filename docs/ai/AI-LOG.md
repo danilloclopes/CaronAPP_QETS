@@ -80,3 +80,16 @@ Este documento registra as interações relevantes com ferramentas de IA Generat
 - **Resultado:** A IA explicou como mockar o `Console`, simular entradas com `Scanner` e capturar a saída via `ByteArrayOutputStream`, além de auxiliar na geração do código inicial dos 12 casos de teste cobrindo fluxos de host (partida/finalização), passageiro (saída de corrida) e validações de ID inexistente.
 - **Decisão:** Aceitei a estrutura de testes e a estratégia de mocks gerada pela IA, revisei os cenários para garantir o uso correto dos objetos reais do domínio (`Usuario`, `Carona`, `Rota`) e conferi a aderência às regras de negócio e transições de estado.
 - **Validação:** Executou `mvn test -Dtest=CaronaManagerTest`: 12 testes executados com sucesso (0 falhas e 0 erros).
+
+---
+
+### Log #006 - Testes Unitários de Console
+
+- **Responsável:** Nicole
+- **Atividade:** Estruturação dos casos de teste unitário e plano de teste da classe Console
+- **Ferramenta:** Github Copilot
+- **Prompt/Instrução:**
+  > "Quero criar testes unitários e plano de teste para a classe Console do projeto CaronAPP. Analise a classe Console, o padrão dos testes existentes e me diga como montar os casos de teste, incluindo estrutura, escopo, manual e issue de defeito."
+- **Resultado:** Foi gerado um conjunto de casos de teste para a classe Console, com escopo, exemplos de IDs, foco em logout, estágio, usuário autenticado, draw(), isAdm() e defeito provável com NullPointerException quando usuário é nulo.
+- **Decisão:** O grupo aceitou a estrutura proposta, ajustando o foco para a classe Console e mantendo o padrão de documentação já usado no projeto. Foi validado que o principal defeito detectado é o uso de usuario.isAdm() sem verificar usuario != null.
+- **Validação:** A resposta foi conferida contra a implementação real da classe Console.java e comparada ao padrão observado nos outros testes de classe. A análise confirmou que os casos de teste são consistentes com a arquitetura do projeto e com o fluxo de console.
