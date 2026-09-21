@@ -67,3 +67,16 @@ Este documento registra as interações relevantes com ferramentas de IA Generat
 - **Resultado:** Foram criados os métodos `consoleComEntrada`, `donoFalso`, `enderecoFalso`, `hospedar` e `caronaComUmaVaga`. Eles preparam o `Console` simulado, os objetos de exemplo e a execução das caronas nos testes.
 - **Decisão:** Ricardo utilizou os métodos auxiliares no arquivo de teste para reduzir a repetição dos dados e facilitar a leitura dos casos.
 - **Validação:** Executou `mvn -Dtest=HostJoinTest test`: 15 testes encontrados, sem falhas ou erros.
+
+---
+
+### Log #005 - Estruturação e Testes Unitários de CaronaManager
+
+- **Responsável:** Rafael
+- **Atividade:** Planejamento e implementação dos testes unitários da classe `CaronaManager` com auxílio de IA.
+- **Ferramenta:** Gemini
+- **Prompt/Instrução:**
+  > "Preciso criar casos de testes unitários para a classe CaronaManager cobrindo os fluxos de dono e passageiro, transições de estado e entradas de console. Como simular o Console/Scanner com Mockito e me ajude a estruturar os casos de teste em JUnit 5?"
+- **Resultado:** A IA explicou como mockar o `Console`, simular entradas com `Scanner` e capturar a saída via `ByteArrayOutputStream`, além de auxiliar na geração do código inicial dos 12 casos de teste cobrindo fluxos de host (partida/finalização), passageiro (saída de corrida) e validações de ID inexistente.
+- **Decisão:** Aceitei a estrutura de testes e a estratégia de mocks gerada pela IA, revisei os cenários para garantir o uso correto dos objetos reais do domínio (`Usuario`, `Carona`, `Rota`) e conferi a aderência às regras de negócio e transições de estado.
+- **Validação:** Executou `mvn test -Dtest=CaronaManagerTest`: 12 testes executados com sucesso (0 falhas e 0 erros).

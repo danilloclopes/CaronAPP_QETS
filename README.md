@@ -16,3 +16,6 @@ Além disso, dentro de cada classe há um comentário informando quem foi o auto
 | Testes unitários de Ricardo | [`HostJoinTest.java`](test/me/br/caronapp/console/util/HostJoinTest.java) |
 | Classe estudada e alterada por Danillo | [`StorageManager.java`](src/me/br/caronapp/storage/StorageManager.java) |
 | Testes unitários de Danillo | [`StorageManagerTest.java`](test/me/br/caronapp/storage/StorageManagerTest.java) |
+| Classe testada por Rafael | [`CaronaManager.java`](src/me/br/caronapp/console/util/CaronaManager.java) |
+| Testes unitários de Rafael | [`CaronaManagerTest.java`](test/me/br/caronapp/console/util/CaronaManagerTest.java) |
+| Registro de uso de IA | [`AI-LOG.md`](docs/ai/AI-LOG.md) |
