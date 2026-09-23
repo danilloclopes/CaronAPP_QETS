@@ -20,5 +20,5 @@ Além disso, dentro de cada classe há um comentário informando quem foi o auto
 | Classe testada por Rafael | [`CaronaManager.java`](src/me/br/caronapp/console/util/CaronaManager.java) |
 | Testes unitários de Rafael | [`CaronaManagerTest.java`](test/me/br/caronapp/console/util/CaronaManagerTest.java) |
 | Classe testada por Nicole | [`Console.java`](src/me/br/caronapp/console/Console.java) |
-| Testes unitários de Nicole | [`ConsoleTeste.java`](test/me/br/caronapp/console/ConsoleTeste.java) |
+| Testes unitários de Nicole | [`ConsoleTest.java`](test/me/br/caronapp/console/ConsoleTest.java) |
 | Registro de uso de IA | [`AI-LOG.md`](docs/ai/AI-LOG.md) |
