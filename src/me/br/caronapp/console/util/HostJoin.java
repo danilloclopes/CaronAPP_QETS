@@ -63,6 +63,7 @@ public class HostJoin {
 			do {
 				System.out.println("Entre com a ID da carona que deseja participar:");
 				carona = selecionarCarona(console);
+				if (carona == null) continue;
 				try {
 					if(carona.adicionaPassageiro(console.getUser())) {
 						System.out.println("Registro de participação efetuado com sucesso!");
@@ -85,6 +86,10 @@ public class HostJoin {
 			}
 			System.out.println("-----------\nDigite o id nome do campus:");
 			return new Campus(PontosDeEncontro.values()[console.getScanner().nextInt()]);
+		} catch (IndexOutOfBoundsException e) {
+			System.out.println("Id invalido...");
+			console.setStage(Stage.LOBBY);
+			return null;
 		} catch (Exception e) {
 			System.out.println("Id invalido...");
 			console.setStage(Stage.LOBBY);
@@ -122,6 +127,8 @@ public class HostJoin {
 	
 	public static Calendar definirData(Console console) {
 		Calendar calendar = Calendar.getInstance();
+		calendar.clear();
+		calendar.setLenient(false);
 		try {
 			calendar.set(console.getScanner().nextInt(), 
 						console.getScanner().nextInt()-1, 
@@ -132,6 +139,12 @@ public class HostJoin {
 		} catch (Exception e) {
 			System.out.println("Data inválida...");
 			console.getScanner().next();
+			return null;
+		}
+		try {
+			calendar.getTimeInMillis();
+		} catch (IllegalArgumentException e) {
+			System.out.println("Data invalida...");
 			return null;
 		}
 		return calendar;
