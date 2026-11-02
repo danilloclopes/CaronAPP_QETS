@@ -109,3 +109,16 @@ Este documento registra as interações relevantes com ferramentas de IA Generat
 - **Decisão:** O usuário definiu que os testes Selenium serão feitos depois pelo grupo. O agente removeu o rascunho e a dependência que havia acrescentado. A implementação restante e os testes HTTP são uma proposta gerada e revisada pelo agente; o aceite e a revisão humana do grupo permanecem pendentes. Não se atribui aprovação ao grupo.
 - **Validação:** A suíte original apresentou 58 testes, cinco falhas e um erro antes das mudanças no domínio. Os dois testes HTTP novos passaram, incluindo cadastro, duplicidade, login, autorização, vagas, participação, saída, reinício, identidade dos objetos, logout, partida e finalização. Relatórios e diferenças entre a versão inicial e final dos testes estão em [`interface-web/REVISAO.md`](interface-web/REVISAO.md). A execução de um rascunho Selenium antes da mudança de escopo não produziu uma validação completa aprovada e não é apresentada como evidência de sucesso.
 - **Instruções, ferramentas e configurações disponíveis:** Priorizar interface simples e interação para testes; registrar contribuições substanciais de IA; não produzir testes Selenium nesta etapa. O agente aplicou a skill local `ponytail` para reduzir dependências e escopo. Usou leitura de arquivos, shell, `apply_patch`, Maven/JUnit e inspeção de relatórios. Java 19.0.2 local; compatibilidade de compilação Java 11; Maven 3.8.7; JUnit 5.7.0 já existente. Não foram fornecidas configurações adicionais de agentes pelo grupo. Detalhes em `interface-web/PROMPTS.md`.
+
+---
+
+### Log #008 - Inspeção e correções de HostJoin com SonarQube
+
+- **Responsável:** Ricardo Tanaka
+- **Atividade:** Apoio no uso do SonarQube e na aplicação das correções apontadas na classe `HostJoin`.
+- **Ferramenta:** OpenAI Codex, via ambiente local de desenvolvimento.
+- **Prompt/Instrução:**
+  > "Auxilie na configuração e utilização do SonarQube para inspecionar a classe HostJoin"
+- **Resultado:** A IA auxiliou na configuração e execução local do SonarQube, na interpretação dos apontamentos e na captura dos prints antes e depois. Aplicou a criação de um logger com `java.util.logging`, a substituição de `Calendar` por `LocalDateTime` em `HostJoin`, a inclusão de um construtor compatível em `Carona`, a restrição do construtor de `HostJoin` e a remoção de uma atribuição desnecessária. Adaptou os testes para capturar e restaurar os logs e repetiu as verificações de cobertura e mutação.
+- **Decisão:** O usuário solicitou a aplicação das correções do SonarQube, incluindo o logger e a migração para `java.time`, preservando a compatibilidade com o restante do projeto.
+- **Validação:** O SonarQube, com o mesmo perfil `Sonar way comprehensive` nas análises antes e depois, passou de 30 para zero apontamentos em `HostJoin`. Os 89 casos de `HostJoinTest` passaram; o JaCoCo registrou 100% de instruções e ramos. O PIT gerou 65 mutantes: 64 mortos e um detectado por timeout, correspondendo a 98,46% de mortos e 100% de detecção na ferramenta. Prints em `relatorios/hostjoin/inspecao/sonar-antes.png` e `relatorios/hostjoin/inspecao/sonar-depois.png`.
