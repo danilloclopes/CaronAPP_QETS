@@ -7,13 +7,21 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.ByteArrayOutputStream;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Locale;
 import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
+import java.util.logging.StreamHandler;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,9 +52,22 @@ public class HostJoinTest {
     private Scanner scanner;
     private ArrayList<Carona> caronasOriginais;
     private int serialOriginal;
+    private ByteArrayOutputStream saidaCapturada;
+    private final Logger logger = Logger.getLogger(HostJoin.class.getName());
+    private StreamHandler handler;
+    private boolean usarHandlersOriginais;
+    private Level nivelOriginal;
 
     @BeforeEach
-    void preparar() {
+    void preparar() throws UnsupportedEncodingException {
+        saidaCapturada = new ByteArrayOutputStream();
+        handler = new StreamHandler(saidaCapturada, new SimpleFormatter());
+        handler.setEncoding(StandardCharsets.UTF_8.name());
+        usarHandlersOriginais = logger.getUseParentHandlers();
+        nivelOriginal = logger.getLevel();
+        logger.setUseParentHandlers(false);
+        logger.setLevel(Level.INFO);
+        logger.addHandler(handler);
         caronasOriginais = new ArrayList<>(Auxiliar.caronasAtivas);
         serialOriginal = Carona.getSerial();
 
@@ -56,10 +77,19 @@ public class HostJoinTest {
 
     @AfterEach
     void limpar() {
+        logger.removeHandler(handler);
+        handler.close();
+        logger.setUseParentHandlers(usarHandlersOriginais);
+        logger.setLevel(nivelOriginal);
         if (scanner != null) scanner.close();
         Auxiliar.caronasAtivas.clear();
         Auxiliar.caronasAtivas.addAll(caronasOriginais);
         Carona.setSerial(serialOriginal);
+    }
+
+    private String saida() {
+        handler.flush();
+        return saidaCapturada.toString(StandardCharsets.UTF_8);
     }
 
     private Console consoleComEntrada(String entrada) {
@@ -86,6 +116,20 @@ public class HostJoinTest {
 
         assertEquals(1, Auxiliar.caronasAtivas.size());
         assertFalse(scanner.hasNext(), "Todas as entradas devem ter sido consumidas");
+        assertTrue(saida().contains("Insira a quantidade de passageiros:"));
+        assertTrue(saida().contains("Insira a data e a hora da carona"));
+        assertTrue(saida().contains("1 - Sentido UFF\n2 - Saindo da UFF"));
+        assertTrue(saida().contains("Escolha o local de "));
+        assertTrue(saida().contains("Entre com as informa"));
+        assertTrue(saida().contains("Digite o id nome do campus:"));
+        for (PontosDeEncontro ponto : PontosDeEncontro.values()) {
+            assertTrue(saida().contains(ponto.ordinal() + " - " + ponto.getNome()));
+        }
+        assertTrue(saida().contains("Latitude:"));
+        assertTrue(saida().contains("Longitude:"));
+        assertTrue(saida().contains("Nome da Rua:"));
+        assertTrue(saida().contains("mero:"));
+        assertTrue(saida().contains("Cep:"));
         verify(console, atLeastOnce()).setStage(Stage.LOBBY);
         return Auxiliar.caronasAtivas.get(0);
     }
@@ -104,12 +148,42 @@ public class HostJoinTest {
     @DisplayName("Deve retornar -1 para quantidade textual")
     void definirPassageirosComTexto() {
         assertEquals(-1, HostJoin.definirPassageiros(consoleComEntrada("abc")));
+        assertTrue(saida().contains("Quantidade inv"));
     }
 
     @Test
     @DisplayName("Deve retornar -1 para sentido textual")
     void selecionarSentidoComTexto() {
         assertEquals(-1, HostJoin.selecionarSentido(consoleComEntrada("abc")));
+        assertTrue(saida().contains("Sentido inv"));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"0, true", "1, false", "4, false", "5, true"})
+    @DisplayName("Deve informar quantidade invalida somente fora dos limites")
+    void definirPassageirosInformaValidacao(int quantidade, boolean invalida) {
+        assertEquals(quantidade, HostJoin.definirPassageiros(consoleComEntrada("" + quantidade)));
+        assertEquals(invalida, saida().contains("Quantidade inv"));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"0, true", "1, false", "2, false", "3, true"})
+    @DisplayName("Deve informar sentido invalido somente fora das opcoes")
+    void selecionarSentidoInformaValidacao(int sentido, boolean invalido) {
+        assertEquals(sentido, HostJoin.selecionarSentido(consoleComEntrada("" + sentido)));
+        assertEquals(invalido, saida().contains("Sentido inv"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"-1", "abc"})
+    @DisplayName("Campus invalido deve informar erro e retornar ao Lobby")
+    void selecionarCampusInvalidoRetornaLobby(String campus) {
+        Console console = consoleComEntrada(campus);
+
+        assertNull(HostJoin.selecionarCampus(console));
+
+        assertTrue(saida().contains("Id invalido..."));
+        verify(console).setStage(Stage.LOBBY);
     }
 
     @Test
@@ -157,6 +231,7 @@ public class HostJoinTest {
     void hostRejeitaDataTextual() {
         Carona carona = hospedar("2", "abc " + DATA_VALIDA, "1", "0", ENDERECO_VALIDO);
         assertEquals(2027, carona.getDataHora().get(Calendar.YEAR));
+        assertTrue(saida().contains("Data inv"));
     }
 
     @ParameterizedTest
@@ -204,6 +279,7 @@ public class HostJoinTest {
         assertEquals(20, calendar.get(Calendar.DAY_OF_MONTH));
         assertEquals(14, calendar.get(Calendar.HOUR_OF_DAY));
         assertEquals(30, calendar.get(Calendar.MINUTE));
+        assertTrue(saida().contains("Data invalida..."));
     }
 
     @ParameterizedTest
@@ -249,9 +325,13 @@ public class HostJoinTest {
         Carona carona = hospedar("2", DATA_VALIDA, sentido, "0", ENDERECO_VALIDO);
         assertEquals(sentidoEsperado, carona.getRota().getSentido());
         if (sentidoEsperado == Sentido.IDA) {
+            assertTrue(saida().contains("Escolha o local de destino:"));
+            assertTrue(saida().contains("partida:"));
             assertEquals("Rua", carona.getRota().getOrigem().getNomeRua());
             assertEquals(PontosDeEncontro.values()[0], carona.getRota().getDestino().getPontoDeEncontro());
         } else {
+            assertTrue(saida().contains("Escolha o local de partida:"));
+            assertTrue(saida().contains("destino:"));
             assertEquals(PontosDeEncontro.values()[0], carona.getRota().getOrigem().getPontoDeEncontro());
             assertEquals("Rua", carona.getRota().getDestino().getNomeRua());
         }
@@ -293,6 +373,7 @@ public class HostJoinTest {
     void hostRejeitaPosicaoTextual() {
         Carona carona = hospedar("2", DATA_VALIDA, "1", "0", "abc " + ENDERECO_VALIDO);
         assertEquals("Rua", carona.getRota().getOrigem().getNomeRua());
+        assertTrue(saida().contains("Valor inv"));
     }
 
     @ParameterizedTest
@@ -343,6 +424,7 @@ public class HostJoinTest {
         Carona carona = caronaComUmaVaga();
 
         assertNull(HostJoin.selecionarCarona(consoleComEntrada("" + (carona.getID() + 1))));
+        assertTrue(saida().contains("ID inv"));
     }
 
     @ParameterizedTest
@@ -359,6 +441,7 @@ public class HostJoinTest {
         assertEquals(1, carona.getVagasPreenchidas());
         assertTrue(carona.estaNaCorrida(passageiro));
         assertTrue(passageiro.getCaronas().contains(carona));
+        assertTrue(saida().contains("ID inv"));
         assertFalse(scanner.hasNext(), "Todas as entradas devem ter sido consumidas");
         verify(console, atLeastOnce()).setStage(Stage.LOBBY);
     }
@@ -372,7 +455,7 @@ public class HostJoinTest {
 
         assertTrue(Auxiliar.caronasAtivas.isEmpty());
         assertFalse(scanner.hasNext(), "Todas as entradas devem ter sido consumidas");
-        verify(console, atLeastOnce()).setStage(Stage.LOBBY);
+        verify(console, times(2)).setStage(Stage.LOBBY);
     }
 
     @Test
@@ -400,6 +483,7 @@ public class HostJoinTest {
         assertEquals(0, carona.getVagasPreenchidas());
         assertEquals(1, carona.getHost().getCaronas().size());
         assertSame(carona, carona.getHost().getCaronas().get(0));
+        assertTrue(saida().contains("Falha."));
         verify(console, atLeastOnce()).setStage(Stage.LOBBY);
     }
 
@@ -475,6 +559,8 @@ public class HostJoinTest {
 
         assertEquals(1, carona.getVagasPreenchidas());
         assertTrue(passageiro.getCaronas().contains(carona));
+        assertTrue(saida().contains("Entre com a ID da carona que deseja participar:"));
+        assertTrue(saida().contains("Registro de participa"));
         verify(console, atLeastOnce()).setStage(Stage.LOBBY);
     }
 
@@ -513,6 +599,7 @@ public class HostJoinTest {
         assertEquals(capacidade, carona.getVagasPreenchidas());
         assertFalse(carona.estaNaCorrida(segundo));
         assertFalse(segundo.getCaronas().contains(carona));
+        assertTrue(saida().contains("vagas dispon"));
         verify(console, atLeastOnce()).setStage(Stage.LOBBY);
     }
 

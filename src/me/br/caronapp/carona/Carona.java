@@ -1,8 +1,11 @@
 package me.br.caronapp.carona;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.GregorianCalendar;
 
 import me.br.caronapp.usuario.Usuario;
 import me.br.caronapp.carona.Rota.Sentido;
@@ -33,6 +36,10 @@ public class Carona implements Serializable {
 	
 	private int id;
 	
+	public Carona(Usuario host, int maximoGuests, LocalDateTime dataHora, Rota rota) {
+		this(host, maximoGuests, GregorianCalendar.from(dataHora.atZone(ZoneId.systemDefault())), rota);
+	}
+
 	public Carona(Usuario host, int maximoGuests, Calendar dataHora, Rota rota) {
 		super();
 		this.host = host;
