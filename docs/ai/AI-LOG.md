@@ -93,3 +93,19 @@ Este documento registra as interações relevantes com ferramentas de IA Generat
 - **Resultado:** Foi gerado um conjunto de casos de teste para a classe Console, com escopo, exemplos de IDs, foco em logout, estágio, usuário autenticado, draw(), isAdm() e defeito provável com NullPointerException quando usuário é nulo.
 - **Decisão:** O grupo aceitou a estrutura proposta, ajustando o foco para a classe Console e mantendo o padrão de documentação já usado no projeto. Foi validado que o principal defeito detectado é o uso de usuario.isAdm() sem verificar usuario != null.
 - **Validação:** A resposta foi conferida contra a implementação real da classe Console.java e comparada ao padrão observado nos outros testes de classe. A análise confirmou que os casos de teste são consistentes com a arquitetura do projeto e com o fluxo de console.
+
+---
+
+### Log #007 - Interface web para testes de sistema
+
+- **Responsável:** Ricardo Tanaka
+- **Atividade:** Implementação de uma interface web simples para acessar os fluxos do CaronAPP_QETS e permitir que o grupo escreva testes de sistema posteriormente.
+- **Ferramenta:** OpenAI Codex (agente baseado em GPT-6), via ambiente local de desenvolvimento.
+- **Prompt/Instrução:**
+  > "Vamos criar uma interface web para um repositorio que usa o console como meio de interação, isso é para uma materia de Qualidade e Teste de software, ou seja a interface não é o importante, apenas como vamos interagir para fazer testes de sistema de seus requisitos usando Selenium. Esse projeto que vamos fazer a interface web é CaronAPP_QETS."
+  > "nao cria os testes do selenium agora eu vou fazer isso depois"
+  O usuário também forneceu as exigências de registro de uso de IA, incluindo responsável, atividade, ferramenta, prompt, resultado, decisão, validação e preservação das versões dos testes. Registro ampliado em [`interface-web/PROMPTS.md`](interface-web/PROMPTS.md).
+- **Resultado:** Adicionado `WebMain`, com servidor HTTP nativo do JDK, formulários HTML, sessões por cookie, persistência web separada e IDs estáveis. Reutilizadas as classes `Auxiliar`, `Usuario`, `Carona`, `Rota`, `Campus` e `Posicao`. Adicionados dois testes HTTP de integração e instruções no README. Nenhum teste ou dependência Selenium foi mantido.
+- **Decisão:** O usuário definiu que os testes Selenium serão feitos depois pelo grupo. O agente removeu o rascunho e a dependência que havia acrescentado. A implementação restante e os testes HTTP são uma proposta gerada e revisada pelo agente; o aceite e a revisão humana do grupo permanecem pendentes. Não se atribui aprovação ao grupo.
+- **Validação:** A suíte original apresentou 58 testes, cinco falhas e um erro antes das mudanças no domínio. Os dois testes HTTP novos passaram, incluindo cadastro, duplicidade, login, autorização, vagas, participação, saída, reinício, identidade dos objetos, logout, partida e finalização. Relatórios e diferenças entre a versão inicial e final dos testes estão em [`interface-web/REVISAO.md`](interface-web/REVISAO.md). A execução de um rascunho Selenium antes da mudança de escopo não produziu uma validação completa aprovada e não é apresentada como evidência de sucesso.
+- **Instruções, ferramentas e configurações disponíveis:** Priorizar interface simples e interação para testes; registrar contribuições substanciais de IA; não produzir testes Selenium nesta etapa. O agente aplicou a skill local `ponytail` para reduzir dependências e escopo. Usou leitura de arquivos, shell, `apply_patch`, Maven/JUnit e inspeção de relatórios. Java 19.0.2 local; compatibilidade de compilação Java 11; Maven 3.8.7; JUnit 5.7.0 já existente. Não foram fornecidas configurações adicionais de agentes pelo grupo. Detalhes em `interface-web/PROMPTS.md`.

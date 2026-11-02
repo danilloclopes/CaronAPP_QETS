@@ -24,4 +24,6 @@ hs_err_pid*
 
 bin/
 target/
+web-data.bin
+caronapp-*.tmp
 
