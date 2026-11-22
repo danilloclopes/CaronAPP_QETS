@@ -122,3 +122,55 @@ Este documento registra as interações relevantes com ferramentas de IA Generat
 - **Resultado:** A IA auxiliou na configuração e execução local do SonarQube, na interpretação dos apontamentos e na captura dos prints antes e depois. Aplicou a criação de um logger com `java.util.logging`, a substituição de `Calendar` por `LocalDateTime` em `HostJoin`, a inclusão de um construtor compatível em `Carona`, a restrição do construtor de `HostJoin` e a remoção de uma atribuição desnecessária. Adaptou os testes para capturar e restaurar os logs e repetiu as verificações de cobertura e mutação.
 - **Decisão:** O usuário solicitou a aplicação das correções do SonarQube, incluindo o logger e a migração para `java.time`, preservando a compatibilidade com o restante do projeto.
 - **Validação:** O SonarQube, com o mesmo perfil `Sonar way comprehensive` nas análises antes e depois, passou de 30 para zero apontamentos em `HostJoin`. Os 89 casos de `HostJoinTest` passaram; o JaCoCo registrou 100% de instruções e ramos. O PIT gerou 65 mutantes: 64 mortos e um detectado por timeout, correspondendo a 98,46% de mortos e 100% de detecção na ferramenta. Prints em `relatorios/hostjoin/inspecao/sonar-antes.png` e `relatorios/hostjoin/inspecao/sonar-depois.png`.
+
+---
+
+### Log #009 - Inspeção da StorageManager com SonarQube
+
+- **Responsável:** Danillo
+- **Atividade:** Configuração do SonarQube local, análise da classe `StorageManager`, correção dos apontamentos e registro antes/depois (Issue #11).
+- **Ferramenta:** Claude Code (Claude Opus 5.5)
+- **Prompt/Instrução:**
+  > "Agora quero fazer a parte do SonarQube na StorageManager. Configure a análise só para essa classe e tire os prints do antes. Abra a Issue no padrão das outras e depois corrija o que o Sonar apontar, principalmente o fechamento manual dos arquivos e os catch vazios. No final, rode de novo, tire o print do depois e feche a Issue explicando o que foi corrigido."
+- **Resultado:** A IA criou o perfil Maven `inspecao-storagemanager`, que analisa somente a `StorageManager`. Explicou que o perfil padrão "Sonar way core" não mostrava apontamentos e que era preciso usar o "Sonar way comprehensive", o mesmo que o Ricardo usou. Na correção, trocou o fechamento manual dos streams por *try-with-resources*, tratou os `catch (EOFException)` vazios com log e separou a leitura em métodos auxiliares. Na primeira análise de "depois", o Quality Gate falhou por cobertura 0%. A IA identificou que faltava enviar o relatório do JaCoCo e rodou a análise de novo com ele.
+- **Decisão:** Aceitei as correções no código. Só troquei o perfil de qualidade depois de perceber que a análise não mostrava nenhuma issue e perguntar se isso era o esperado. Passei o token do Sonar apenas pela linha de comando, sem salvá-lo no `pom.xml`.
+- **Validação:** No SonarQube, a classe passou de 12 apontamentos para 0, com Quality Gate aprovado e 100% de cobertura. Os testes continuaram passando depois da refatoração. Prints em `relatorios/storagemanager/inspecao/`. A Issue #11 foi fechada com um comentário explicando a correção.
+
+---
+
+### Log #010 - Isolamento dos testes unitários, JaCoCo e PITest da StorageManager
+
+- **Responsável:** Danillo
+- **Atividade:** Ajustes nos testes de `StorageManager` para que a suíte ficasse verde e atingisse as metas de cobertura de arestas (JaCoCo) e de mutação (PIT).
+- **Ferramenta:** Claude Code (Claude Opus 5.5)
+- **Prompt/Instrução:**
+  > "Faça a etapa de testes unitários da StorageManager. Os testes precisam ficar isolados, sem mexer nos arquivos .bin reais, e a suíte tem que passar inteira para o PITest conseguir rodar. Os testes que falham de propósito da Entrega 1 não podem se perder. Quero pelo menos 80% de cobertura de arestas no JaCoCo e 80% de mutantes mortos no PIT, e a classe precisa ter complexidade de pelo menos 10."
+- **Resultado:** A IA adicionou à `StorageManager` um construtor que recebe os caminhos dos arquivos, com validação de caminho nulo, vazio ou repetido. Reescreveu `StorageManagerTest` usando pasta temporária (`@TempDir`) em vez do backup dos `.bin` reais e acrescentou casos novos (CT-U-SM-14 a 24): arquivo corrompido, classe inexistente, listas nulas, sobrescrita e ordem dos registros. Os 5 casos da Entrega 1 que falhavam de propósito foram movidos sem alteração para `StorageManagerDefeitosTest`. Também criou os perfis Maven `estrutural-storagemanager` e `mutacao-storagemanager`.
+- **Decisão:** Aceitei a separação dos testes de defeito, pois isso mantém as falhas documentadas (Issues #1, #2, #3, #5 e #8) sem impedir o PIT de rodar. Mantive o código original dos testes da Entrega 1 para preservar a versão anterior.
+- **Validação:** Os 19 testes de `StorageManagerTest` passaram. JaCoCo: 100% de arestas (22/22) e de linhas (58/58). PIT: 18 de 18 mutantes mortos (100%). Prints em `relatorios/storagemanager/estrutural/` e `relatorios/storagemanager/mutacao/`.
+
+---
+
+### Log #011 - Teste de integração LoginRegistro + Auxiliar + StorageManager
+
+- **Responsável:** Danillo
+- **Atividade:** Criação do `AuthStorageIntegrationTest` (CT-I-SM-01 a 07) e registro do defeito encontrado (Issue #12).
+- **Ferramenta:** Claude Code (Claude Opus 5.5)
+- **Prompt/Instrução:**
+  > "Crie o teste de integração entre LoginRegistro, Auxiliar e StorageManager, sem mocks. O fluxo é: cadastrar um usuário pela lógica de registro, salvar com a StorageManager, limpar a memória do Auxiliar, carregar de novo e fazer o login com o usuário recuperado. Se algum dado não voltar certo ou houver conflito de IDs, abra uma Issue descrevendo o problema."
+- **Resultado:** A IA criou 7 cenários que usam o `Console` real com entrada de teclado simulada: cadastro e login após reinício, senha errada, maiúsculas no usuário, usuário duplicado, vários usuários e caronas persistidas. O CT-I-SM-07 revelou um defeito real. Como usuários e caronas são gravados em arquivos separados, depois de recarregar a carona ativa e a carona na lista do motorista viram objetos diferentes, e o motorista não vê o passageiro que entrou. A IA abriu a Issue #12 com os passos para reproduzir.
+- **Decisão:** Aceitei os testes e a Issue. Cheguei a pedir a correção do defeito, mas ela foi interrompida e ainda não foi aplicada. O CT-I-SM-07 continua falhando de propósito, para documentar o problema.
+- **Validação:** Executei a classe de integração: 6 testes passaram e o CT-I-SM-07 falhou da forma descrita na Issue #12.
+
+---
+
+### Log #012 - Testes Selenium das telas de cadastro e login
+
+- **Responsável:** Danillo
+- **Atividade:** Automação dos testes de sistema da interface web (cadastro e login) com Selenium.
+- **Ferramenta:** Claude Code (Claude Opus 5.5)
+- **Prompt/Instrução:**
+  > "Agora faça os testes Selenium das telas de cadastro e login da interface web. Quero que o teste preencha nome, CPF, usuário e senha, cadastre e verifique se entrou no sistema. No login, teste com a senha errada para ver se aparece a mensagem de erro e depois com a senha certa para ver se entra no lobby. Se a tela aceitar usuário duplicado ou não mostrar o erro, abra uma Issue."
+- **Resultado:** A IA adicionou a dependência do Selenium ao `pom.xml` e criou `CadastroLoginSeleniumTest`, com 7 casos (CT-S-SM-01 a 07): cadastro com sucesso, usuário duplicado, senha errada, usuário inexistente, login correto, campos obrigatórios e cadastro mantido após reiniciar o servidor. Cada teste sobe o `WebMain` numa porta livre, com dados em pasta temporária, e usa o Chrome sem janela (headless).
+- **Decisão:** Aceitei os testes. Não encontrei defeito nessas telas, então não abri Issue. Depois de enviar o commit com a mensagem errada, corrigi o nome dele.
+- **Validação:** Os 7 testes passaram (cerca de 21 s).
