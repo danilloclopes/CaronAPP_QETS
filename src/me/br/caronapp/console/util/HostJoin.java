@@ -15,6 +15,7 @@ import me.br.caronapp.carona.Rota;
 import me.br.caronapp.carona.excecoes.VagasExcedidasException;
 import me.br.caronapp.console.Console;
 import me.br.caronapp.console.Console.Stage;
+import me.br.caronapp.usuario.Usuario;
 
 /*
  * Author: Sérgio Ricardo
@@ -59,13 +60,28 @@ public class HostJoin {
 			posicao = definirPosicao(console);
 		} while (posicao == null);
 		
-		Rota rota = (sentido == 1) ? new Rota(posicao, campus) : new Rota(campus, posicao);
-	
-		Auxiliar.criarCarona(new Carona(console.getUser(), numeroDePassageiros, dataHora, rota));
+		host(console.getUser(), numeroDePassageiros, dataHora,
+				(sentido == 1) ? Rota.Sentido.IDA : Rota.Sentido.VOLTA, campus, posicao);
 		
 		console.setStage(Stage.LOBBY);
 	}
 	
+	/** Operacao compartilhada pelo console e pela interface web. */
+	public static void host(Usuario usuario, int passageiros, LocalDateTime dataHora,
+			Rota.Sentido sentido, Campus campus, Posicao endereco) {
+		if (passageiros < 1 || passageiros > 4) {
+			throw new IllegalArgumentException("A quantidade de passageiros deve ser de 1 a 4.");
+		}
+		Rota rota = sentido == Rota.Sentido.IDA
+				? new Rota(endereco, campus) : new Rota(campus, endereco);
+		Auxiliar.criarCarona(new Carona(usuario, passageiros, dataHora, rota));
+	}
+
+	/** Delega a participacao ao dominio e preserva o resultado e a excecao de lotacao. */
+	public static boolean join(Carona carona, Usuario usuario) throws VagasExcedidasException {
+		return carona.adicionaPassageiro(usuario);
+	}
+
 	public static void join(Console console) {
 		Carona carona = null;
 		if(ListarCaronas.draw(console)) {
@@ -74,7 +90,7 @@ public class HostJoin {
 				carona = selecionarCarona(console);
 				if (carona == null) continue;
 				try {
-					if(carona.adicionaPassageiro(console.getUser())) {
+					if(join(carona, console.getUser())) {
 						LOGGER.info("Registro de participação efetuado com sucesso!");
 					} else {
 						LOGGER.info("Falha.");

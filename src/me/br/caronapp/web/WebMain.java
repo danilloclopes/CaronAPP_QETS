@@ -14,6 +14,7 @@ import me.br.caronapp.carona.*;
 import me.br.caronapp.carona.Carona.Estado;
 import me.br.caronapp.carona.excecoes.*;
 import me.br.caronapp.usuario.Usuario;
+import me.br.caronapp.console.util.HostJoin;
 
 /** Adaptador HTTP local: formulários HTML chamam o mesmo domínio usado pelo console. */
 public class WebMain implements AutoCloseable {
@@ -110,7 +111,7 @@ public class WebMain implements AutoCloseable {
                     boolean dono = carona.getHost().equals(usuario);
                     switch (caminho) {
                         case "/caronas/entrar":
-                            exigir(carona.adicionaPassageiro(usuario), "Não foi possível entrar: você já participa ou a carona não está aberta.");
+                            exigir(HostJoin.join(carona, usuario), "Não foi possível entrar: você já participa ou a carona não está aberta.");
                             mensagem = "Participação confirmada.";
                             break;
                         case "/caronas/sair":
@@ -165,9 +166,7 @@ public class WebMain implements AutoCloseable {
         int numero = Integer.parseInt(obrigatorio(c, "numero"));
         exigir(numero >= 0, "Número do endereço inválido.");
         Posicao endereco = new Posicao(latitude, longitude, rua, numero, obrigatorio(c, "cep"));
-        Calendar horario = GregorianCalendar.from(data.atZone(ZoneId.systemDefault()));
-        Rota rota = sentido.equals("IDA") ? new Rota(endereco, campus) : new Rota(campus, endereco);
-        Auxiliar.criarCarona(new Carona(usuario, vagas, horario, rota));
+        HostJoin.host(usuario, vagas, data, Rota.Sentido.valueOf(sentido), campus, endereco);
     }
 
     private static Carona buscar(int id) {
