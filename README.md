@@ -28,7 +28,7 @@ Os dados web ficam em `web-data.bin`, separado de `usuarios.bin` e `caronas.bin`
 
 Fluxos disponíveis: cadastro, login, logout, oferta de carona (ida ou volta), consulta das caronas abertas, participação, saída, confirmação da partida, finalização e histórico. A partida é liberada ao motorista quando faltam até 30 minutos para o horário informado. A página atualiza o estado ao receber uma requisição; atualize o navegador para consultar a passagem do tempo.
 
-Evidências, limitações e revisão da geração com IA estão em [`docs/ai/interface-web/REVISAO.md`](docs/ai/interface-web/REVISAO.md).
+O [registro de IA da interface web](docs/ai/AI-LOG.md#log-007---interface-web-para-testes-de-sistema) reúne os prompts, as decisões e a validação. O repositório preserva a [versão inicial dos testes HTTP](docs/ai/interface-web/inicial/WebMainTest.java) e a [suíte de integração atual](test/me/br/caronapp/web/WebMainTest.java).
 
 ## Artefatos da entrega
 
