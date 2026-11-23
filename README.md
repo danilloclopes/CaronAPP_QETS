@@ -35,6 +35,7 @@ Evidências, limitações e revisão da geração com IA estão em [`docs/ai/int
 | Artefato | Localização |
 | --- | --- |
 | Plano de teste | [Google Docs](https://docs.google.com/document/d/1FSFp_FmcxB4HVQn61aRE9TdHVGx_MrsLQle18v1hbhA/edit?usp=sharing) |
+| Avaliação da qualidade do CaronAPP segundo a ISO/IEC 25010 | [Google Docs](https://docs.google.com/document/d/1FAFQ92w81ss8Acx8q8oZJbIy-Nop7vVo62czM57yMWk/edit?usp=sharing) |
 | Documento compartilhado do grupo (Google Docs) | [Abrir documento](https://docs.google.com/document/d/1ekOuJkdEYtPGt5Mn_Prw_icX7OnHMUNa8h7mTlUdT9g/edit?usp=sharing) |
 | Local de Testes | [Abrir documento](https://docs.google.com/document/d/1ekOuJkdEYtPGt5Mn_Prw_icX7OnHMUNa8h7mTlUdT9g/edit?usp=sharing) |
 | Classe testada por Ricardo | [`HostJoin.java`](src/me/br/caronapp/console/util/HostJoin.java) |
