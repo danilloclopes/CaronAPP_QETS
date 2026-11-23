@@ -1,0 +1,483 @@
+package me.br.caronapp.console.util;
+
+import java.io.ByteArrayOutputStream;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Locale;
+import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
+import java.util.logging.StreamHandler;
+import me.br.caronapp.Auxiliar;
+import me.br.caronapp.carona.Campus;
+import me.br.caronapp.carona.Carona.Estado;
+import me.br.caronapp.carona.Carona;
+import me.br.caronapp.carona.PontosDeEncontro;
+import me.br.caronapp.carona.Posicao;
+import me.br.caronapp.carona.Rota.Sentido;
+import me.br.caronapp.carona.Rota;
+import me.br.caronapp.console.Console.Stage;
+import me.br.caronapp.console.Console;
+import me.br.caronapp.usuario.Usuario;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@DisplayName("Etapa 2: integracao com dominio real")
+public class HostJoinDominioRealTest {
+    private static final String DATA_VALIDA = "2027 10 20 14 30";
+    private static final String ENDERECO_VALIDO = "10 20 Rua 50 12345";
+
+    private Scanner scanner;
+    private ArrayList<Carona> caronasOriginais;
+    private int serialOriginal;
+    private ByteArrayOutputStream saidaCapturada;
+    private final Logger logger = Logger.getLogger(HostJoin.class.getName());
+    private StreamHandler handler;
+    private boolean usarHandlersOriginais;
+    private Level nivelOriginal;
+
+    @BeforeEach
+    void preparar() throws UnsupportedEncodingException {
+        saidaCapturada = new ByteArrayOutputStream();
+        handler = new StreamHandler(saidaCapturada, new SimpleFormatter());
+        handler.setEncoding(StandardCharsets.UTF_8.name());
+        usarHandlersOriginais = logger.getUseParentHandlers();
+        nivelOriginal = logger.getLevel();
+        logger.setUseParentHandlers(false);
+        logger.setLevel(Level.INFO);
+        logger.addHandler(handler);
+        caronasOriginais = new ArrayList<>(Auxiliar.caronasAtivas);
+        serialOriginal = Carona.getSerial();
+
+        Auxiliar.caronasAtivas.clear();
+        Carona.setSerial(0);
+    }
+
+    @AfterEach
+    void limpar() {
+        logger.removeHandler(handler);
+        handler.close();
+        logger.setUseParentHandlers(usarHandlersOriginais);
+        logger.setLevel(nivelOriginal);
+        if (scanner != null) {
+            scanner.close();
+        }
+        Auxiliar.caronasAtivas.clear();
+        Auxiliar.caronasAtivas.addAll(caronasOriginais);
+        Carona.setSerial(serialOriginal);
+    }
+
+    private String saida() {
+        handler.flush();
+        return saidaCapturada.toString(StandardCharsets.UTF_8);
+    }
+
+    private Console consoleComEntrada(String entrada) {
+        scanner = new Scanner(entrada).useLocale(Locale.US);
+        Console console = mock(Console.class);
+        when(console.getScanner()).thenReturn(scanner);
+        return console;
+    }
+
+    private Usuario donoFalso() {
+        return new Usuario("dono", "Dono", "1", "senha");
+    }
+
+    private Posicao enderecoFalso() {
+        return new Posicao(10, 20, "Rua", 50, "12345");
+    }
+
+    private Carona hospedar(String passageiros, String data, String sentido, String campus, String endereco) {
+        String entrada = String.join(" ", passageiros, data, sentido, campus, endereco);
+        Console console = consoleComEntrada(entrada);
+        when(console.getUser()).thenReturn(donoFalso());
+
+        HostJoin.host(console);
+
+        assertEquals(1, Auxiliar.caronasAtivas.size());
+        assertFalse(scanner.hasNext(), "Todas as entradas devem ter sido consumidas");
+        assertTrue(saida().contains("Insira a quantidade de passageiros:"));
+        assertTrue(saida().contains("Insira a data e a hora da carona"));
+        assertTrue(saida().contains("1 - Sentido UFF\n2 - Saindo da UFF"));
+        assertTrue(saida().contains("Escolha o local de "));
+        assertTrue(saida().contains("Entre com as informa"));
+        assertTrue(saida().contains("Digite o id nome do campus:"));
+        for (PontosDeEncontro ponto : PontosDeEncontro.values()) {
+            assertTrue(saida().contains(ponto.ordinal() + " - " + ponto.getNome()));
+        }
+        assertTrue(saida().contains("Latitude:"));
+        assertTrue(saida().contains("Longitude:"));
+        assertTrue(saida().contains("Nome da Rua:"));
+        assertTrue(saida().contains("mero:"));
+        assertTrue(saida().contains("Cep:"));
+        verify(console, atLeastOnce()).setStage(Stage.LOBBY);
+        return Auxiliar.caronasAtivas.get(0);
+    }
+  
+    private Carona caronaComUmaVaga() {
+        Usuario dono = donoFalso();
+        Posicao endereco = enderecoFalso();
+        Campus campus = new Campus(PontosDeEncontro.PRAIAVERMELHA);
+        Rota rota = new Rota(endereco, campus);
+        Carona carona = new Carona(dono, 1, Calendar.getInstance(), rota);
+        Auxiliar.caronasAtivas.add(carona);
+        return carona;
+    }
+
+    @Test
+    @DisplayName("Deve criar carona de ida com dados validos")
+    void criarCaronaDeIda() {
+        Usuario dono = donoFalso();
+        Console console = consoleComEntrada("2 2027 10 20 14 30 1 0 10 20 Rua 50 12345");
+        when(console.getUser()).thenReturn(dono);
+
+        HostJoin.host(console);
+
+        assertEquals(1, Auxiliar.caronasAtivas.size());
+        Carona carona = Auxiliar.caronasAtivas.get(0);
+        assertSame(dono, carona.getHost());
+        assertEquals(2, carona.getMaximoGuests());
+        assertEquals(Estado.ABERTO, carona.getEstado());
+        assertEquals(Sentido.IDA, carona.getRota().getSentido());
+        assertTrue(dono.getCaronas().contains(carona));
+        verify(console, atLeastOnce()).setStage(Stage.LOBBY);
+    }
+
+    @Test
+    @DisplayName("host: rejeita 0 vagas e aceita o limite minimo de 1")
+    void hostRejeitaZeroVagas() {
+        Carona carona = hospedar("0 1", DATA_VALIDA, "1", "0", ENDERECO_VALIDO);
+        assertEquals(1, carona.getMaximoGuests());
+    }
+
+    @Test
+    @DisplayName("host: rejeita 5 vagas e aceita o limite maximo de 4")
+    void hostRejeitaCincoVagas() {
+        Carona carona = hospedar("5 4", DATA_VALIDA, "1", "0", ENDERECO_VALIDO);
+        assertEquals(4, carona.getMaximoGuests());
+    }
+
+    @Test
+    @DisplayName("host: pede novamente a quantidade quando recebe texto")
+    void hostRejeitaPassageirosTextuais() {
+        Carona carona = hospedar("abc 2", DATA_VALIDA, "1", "0", ENDERECO_VALIDO);
+        assertEquals(2, carona.getMaximoGuests());
+    }
+
+    @Test
+    @DisplayName("host: pede novamente a data quando recebe texto")
+    void hostRejeitaDataTextual() {
+        Carona carona = hospedar("2", "abc " + DATA_VALIDA, "1", "0", ENDERECO_VALIDO);
+        assertEquals(2027, carona.getDataHora().get(Calendar.YEAR));
+        assertTrue(saida().contains("Data inv"));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "2028, 1, 1, 0, 0",
+        "2028, 12, 31, 23, 59",
+        "2028, 2, 29, 12, 30"
+    })
+    @DisplayName("host: preserva datas validas e limites de calendario e horario")
+    void hostAceitaDataValida(int ano, int mes, int dia, int hora, int minuto) {
+        String data = ano + " " + mes + " " + dia + " " + hora + " " + minuto;
+        Carona carona = hospedar("2", data, "1", "0", ENDERECO_VALIDO);
+
+        Calendar calendar = carona.getDataHora();
+        assertEquals(ano, calendar.get(Calendar.YEAR));
+        assertEquals(mes - 1, calendar.get(Calendar.MONTH));
+        assertEquals(dia, calendar.get(Calendar.DAY_OF_MONTH));
+        assertEquals(hora, calendar.get(Calendar.HOUR_OF_DAY));
+        assertEquals(minuto, calendar.get(Calendar.MINUTE));
+        assertEquals(0, calendar.get(Calendar.SECOND));
+        assertEquals(0, calendar.get(Calendar.MILLISECOND));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "2029 2 29 12 30", "2028 1 15 24 30"
+    })
+    @DisplayName("host: rejeita datas impossiveis e horarios fora dos limites")
+    void hostRejeitaDataInvalida(String dataInvalida) {
+        Carona carona = hospedar("2", dataInvalida + " " + DATA_VALIDA, "1", "0", ENDERECO_VALIDO);
+
+        Calendar calendar = carona.getDataHora();
+        assertEquals(2027, calendar.get(Calendar.YEAR));
+        assertEquals(Calendar.OCTOBER, calendar.get(Calendar.MONTH));
+        assertEquals(20, calendar.get(Calendar.DAY_OF_MONTH));
+        assertEquals(14, calendar.get(Calendar.HOUR_OF_DAY));
+        assertEquals(30, calendar.get(Calendar.MINUTE));
+        assertTrue(saida().contains("Data invalida..."));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"0", "3", "abc"})
+    @DisplayName("host: rejeita sentido invalido e cria carona de volta")
+    void hostRejeitaSentidoInvalido(String sentidoInvalido) {
+        Carona carona = hospedar("2", DATA_VALIDA, sentidoInvalido + " 2", "0", ENDERECO_VALIDO);
+        assertEquals(Sentido.VOLTA, carona.getRota().getSentido());
+    }
+
+    @ParameterizedTest
+    @CsvSource({"1, IDA", "2, VOLTA"})
+    @DisplayName("host: cria a rota correspondente a cada sentido valido")
+    void hostAceitaSentidoValido(String sentido, Sentido sentidoEsperado) {
+        Carona carona = hospedar("2", DATA_VALIDA, sentido, "0", ENDERECO_VALIDO);
+        assertEquals(sentidoEsperado, carona.getRota().getSentido());
+        if (sentidoEsperado == Sentido.IDA) {
+            assertTrue(saida().contains("Escolha o local de destino:"));
+            assertTrue(saida().contains("partida:"));
+            assertEquals("Rua", carona.getRota().getOrigem().getNomeRua());
+            assertEquals(PontosDeEncontro.values()[0], carona.getRota().getDestino().getPontoDeEncontro());
+        } else {
+            assertTrue(saida().contains("Escolha o local de partida:"));
+            assertTrue(saida().contains("destino:"));
+            assertEquals(PontosDeEncontro.values()[0], carona.getRota().getOrigem().getPontoDeEncontro());
+            assertEquals("Rua", carona.getRota().getDestino().getNomeRua());
+        }
+    }
+
+    @Test
+    @DisplayName("host: rejeita campus textual e aceita o ultimo indice")
+    void hostRejeitaCampusTextual() {
+        int ultimoCampus = PontosDeEncontro.values().length - 1;
+        Carona carona = hospedar("2", DATA_VALIDA, "1", "abc " + ultimoCampus, ENDERECO_VALIDO);
+        assertEquals(PontosDeEncontro.values()[ultimoCampus], carona.getRota().getDestino().getPontoDeEncontro());
+    }
+
+    @Test
+    @DisplayName("host: rejeita campus negativo e aceita o primeiro indice")
+    void hostRejeitaCampusNegativo() {
+        Carona carona = hospedar("2", DATA_VALIDA, "1", "-1 0", ENDERECO_VALIDO);
+        assertEquals(PontosDeEncontro.values()[0], carona.getRota().getDestino().getPontoDeEncontro());
+    }
+
+    @Test
+    @DisplayName("host: rejeita campus acima do ultimo indice e aceita o primeiro")
+    void hostRejeitaCampusAcimaDoLimite() {
+        int campusInvalido = PontosDeEncontro.values().length;
+        Carona carona = hospedar("2", DATA_VALIDA, "1", campusInvalido + " 0", ENDERECO_VALIDO);
+        assertEquals(PontosDeEncontro.values()[0], carona.getRota().getDestino().getPontoDeEncontro());
+    }
+
+    @Test
+    @DisplayName("host: pede novamente a posicao quando latitude e texto")
+    void hostRejeitaPosicaoTextual() {
+        Carona carona = hospedar("2", DATA_VALIDA, "1", "0", "abc " + ENDERECO_VALIDO);
+        assertEquals("Rua", carona.getRota().getOrigem().getNomeRua());
+        assertTrue(saida().contains("Valor inv"));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "-90, -180, RuaSul, 1, 00000000",
+        "90, 180, RuaNorte, 100, 99999999"
+    })
+    @DisplayName("host: preserva coordenadas e campos do endereco informado")
+    void hostAceitaPosicaoValida(double latitude, double longitude, String rua, int numero, String cep) {
+        String endereco = latitude + " " + longitude + " " + rua + " " + numero + " " + cep;
+        Carona carona = hospedar("2", DATA_VALIDA, "1", "0", endereco);
+
+        Posicao origem = carona.getRota().getOrigem();
+        assertEquals(latitude, origem.getLatitude());
+        assertEquals(longitude, origem.getLongitude());
+        assertEquals(rua, origem.getNomeRua());
+        assertEquals(numero, origem.getNumero());
+        assertEquals(cep, origem.getCep());
+    }
+
+    @Test
+    @DisplayName("join: pede novamente o ID quando recebe entrada invalida")
+    void entrarEmCaronaAposIdInvalido() {
+        Carona carona = caronaComUmaVaga();
+        Usuario passageiro = new Usuario("passageiro", "Passageiro", "2", "senha");
+        Console console = consoleComEntrada("1 abc " + carona.getID());
+        when(console.getUser()).thenReturn(passageiro);
+
+        HostJoin.join(console);
+
+        assertEquals(1, carona.getVagasPreenchidas());
+        assertTrue(carona.estaNaCorrida(passageiro));
+        assertTrue(passageiro.getCaronas().contains(carona));
+        assertTrue(saida().contains("ID inv"));
+        assertFalse(scanner.hasNext(), "Todas as entradas devem ter sido consumidas");
+        verify(console, atLeastOnce()).setStage(Stage.LOBBY);
+    }
+
+    @Test
+    @DisplayName("join: retorna ao Lobby quando nao existem caronas")
+    void naoEntrarQuandoNaoExistemCaronas() {
+        Console console = consoleComEntrada("1");
+
+        HostJoin.join(console);
+
+        assertTrue(Auxiliar.caronasAtivas.isEmpty());
+        assertFalse(scanner.hasNext(), "Todas as entradas devem ter sido consumidas");
+        verify(console, times(2)).setStage(Stage.LOBBY);
+    }
+
+    @Test
+    @DisplayName("join: nao solicita ID quando nao ha caronas no sentido escolhido")
+    void naoEntrarQuandoNaoExisteCaronaNoSentido() {
+        Carona carona = caronaComUmaVaga();
+        Console console = consoleComEntrada("2");
+
+        HostJoin.join(console);
+
+        assertEquals(0, carona.getVagasPreenchidas());
+        assertFalse(scanner.hasNext(), "Todas as entradas devem ter sido consumidas");
+        verify(console, atLeastOnce()).setStage(Stage.LOBBY);
+    }
+
+    @Test
+    @DisplayName("join: nao adiciona o dono como passageiro")
+    void naoEntrarNaPropriaCarona() {
+        Carona carona = caronaComUmaVaga();
+        Console console = consoleComEntrada("1 " + carona.getID());
+        when(console.getUser()).thenReturn(carona.getHost());
+
+        HostJoin.join(console);
+
+        assertEquals(0, carona.getVagasPreenchidas());
+        assertEquals(1, carona.getHost().getCaronas().size());
+        assertSame(carona, carona.getHost().getCaronas().get(0));
+        assertTrue(saida().contains("Falha."));
+        verify(console, atLeastOnce()).setStage(Stage.LOBBY);
+    }
+
+    @Test
+    @DisplayName("join: nao duplica a participacao de passageiro ja inscrito")
+    void naoEntrarDuasVezesNaMesmaCarona() throws Exception {
+        Carona carona = caronaComUmaVaga();
+        carona.setMaximoGuests(2);
+        Usuario passageiro = new Usuario("passageiro", "Passageiro", "2", "senha");
+        carona.adicionaPassageiro(passageiro);
+        Console console = consoleComEntrada("1 " + carona.getID());
+        when(console.getUser()).thenReturn(passageiro);
+
+        HostJoin.join(console);
+
+        assertEquals(1, carona.getVagasPreenchidas());
+        assertTrue(carona.estaNaCorrida(passageiro));
+        assertEquals(1, passageiro.getCaronas().size());
+        assertSame(carona, passageiro.getCaronas().get(0));
+        verify(console, atLeastOnce()).setStage(Stage.LOBBY);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = Estado.class, names = {"AGUARDANDO", "FECHADO", "FINALIZADO"})
+    @DisplayName("join: nao adiciona passageiro em carona que nao esta aberta")
+    void naoEntrarEmCaronaQueNaoEstaAberta(Estado estado) {
+        Carona carona = caronaComUmaVaga();
+        carona.setEstado(estado);
+        caronaComUmaVaga();
+        Usuario passageiro = new Usuario("passageiro", "Passageiro", "2", "senha");
+        Console console = consoleComEntrada("1 " + carona.getID());
+        when(console.getUser()).thenReturn(passageiro);
+
+        HostJoin.join(console);
+
+        assertEquals(0, carona.getVagasPreenchidas());
+        assertFalse(carona.estaNaCorrida(passageiro));
+        assertTrue(passageiro.getCaronas().isEmpty());
+        assertFalse(scanner.hasNext(), "Todas as entradas devem ter sido consumidas");
+        verify(console, atLeastOnce()).setStage(Stage.LOBBY);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1, 4})
+    @DisplayName("join: aceita passageiro na ultima vaga disponivel")
+    void entrarNaUltimaVaga(int capacidade) throws Exception {
+        Carona carona = caronaComUmaVaga();
+        carona.setMaximoGuests(capacidade);
+        for (int i = 0; i < capacidade - 1; i++) {
+            carona.adicionaPassageiro(new Usuario("pass" + i, "Passageiro " + i, "3", "senha"));
+        }
+        Usuario passageiro = new Usuario("ultimo", "Ultimo", "2", "senha");
+        Console console = consoleComEntrada("1 " + carona.getID());
+        when(console.getUser()).thenReturn(passageiro);
+
+        HostJoin.join(console);
+
+        assertEquals(capacidade, carona.getVagasPreenchidas());
+        assertTrue(carona.estaNaCorrida(passageiro));
+        assertTrue(passageiro.getCaronas().contains(carona));
+        verify(console, atLeastOnce()).setStage(Stage.LOBBY);
+    }
+
+    @Test
+    @DisplayName("Deve entrar em carona aberta com vaga")
+    void entrarEmCaronaComVaga() {
+        Carona carona = caronaComUmaVaga();
+        Usuario passageiro = new Usuario("passageiro", "Passageiro", "2", "senha");
+        Console console = consoleComEntrada("1 " + carona.getID());
+        when(console.getUser()).thenReturn(passageiro);
+
+        HostJoin.join(console);
+
+        assertEquals(1, carona.getVagasPreenchidas());
+        assertTrue(passageiro.getCaronas().contains(carona));
+        assertTrue(saida().contains("Entre com a ID da carona que deseja participar:"));
+        assertTrue(saida().contains("Registro de participa"));
+        verify(console, atLeastOnce()).setStage(Stage.LOBBY);
+    }
+
+    @Test
+    @DisplayName("join: pede novamente o ID quando a carona nao existe")
+    void entrarEmCaronaAposIdInexistente() {
+        Carona carona = caronaComUmaVaga();
+        Usuario passageiro = new Usuario("passageiro", "Passageiro", "2", "senha");
+        Console console = consoleComEntrada("1 " + (carona.getID() + 1) + " " + carona.getID());
+        when(console.getUser()).thenReturn(passageiro);
+
+        HostJoin.join(console);
+
+        assertTrue(saida().contains("ID inv"));
+
+        assertEquals(1, carona.getVagasPreenchidas());
+        assertTrue(carona.estaNaCorrida(passageiro));
+        assertTrue(passageiro.getCaronas().contains(carona));
+        assertFalse(scanner.hasNext(), "Todas as entradas devem ter sido consumidas");
+        verify(console, atLeastOnce()).setStage(Stage.LOBBY);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1, 4})
+    @DisplayName("Nao deve adicionar passageiro em carona lotada")
+    void naoEntrarEmCaronaLotada(int capacidade) throws Exception {
+        Carona carona = caronaComUmaVaga();
+        carona.setMaximoGuests(capacidade);
+        for (int i = 0; i < capacidade; i++) {
+            carona.adicionaPassageiro(new Usuario("pass" + i, "Passageiro " + i, "2", "senha"));
+        }
+        Usuario segundo = new Usuario("segundo", "Segundo", "3", "senha");
+        Console console = consoleComEntrada("1 " + carona.getID());
+        when(console.getUser()).thenReturn(segundo);
+
+        HostJoin.join(console);
+
+        assertEquals(capacidade, carona.getVagasPreenchidas());
+        assertFalse(carona.estaNaCorrida(segundo));
+        assertFalse(segundo.getCaronas().contains(carona));
+        assertTrue(saida().contains("vagas dispon"));
+        verify(console, atLeastOnce()).setStage(Stage.LOBBY);
+    }
+}

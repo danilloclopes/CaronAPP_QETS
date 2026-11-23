@@ -180,6 +180,8 @@
               </targetClasses>
               <targetTests>
                 <param>me.br.caronapp.console.util.HostJoinTest</param>
+                <param>me.br.caronapp.console.util.HostJoinDominioSimuladoTest</param>
+                <param>me.br.caronapp.console.util.HostJoinDominioRealTest</param>
               </targetTests>
               <mutationThreshold>80</mutationThreshold>
               <features>
@@ -215,6 +217,8 @@
             <configuration>
               <includes>
                 <include>**/HostJoinTest.java</include>
+                <include>**/HostJoinDominioSimuladoTest.java</include>
+                <include>**/HostJoinDominioRealTest.java</include>
               </includes>
             </configuration>
           </plugin>
