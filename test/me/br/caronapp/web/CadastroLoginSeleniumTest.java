@@ -16,6 +16,8 @@ import org.junit.jupiter.api.io.TempDir;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -127,12 +129,19 @@ class CadastroLoginSeleniumTest {
 	}
 
 	private void sai() {
-		driver.findElement(By.id("logout-submit")).click();
+		espera.until(ExpectedConditions.elementToBeClickable(By.id("logout-submit"))).click();
 		assertEquals(SAIU, mensagem());
 	}
 
 	private static String mensagem() {
-		return espera.until(ExpectedConditions.visibilityOfElementLocated(By.id("mensagem"))).getText();
+		return espera.until(d -> {
+			try {
+				WebElement elemento = d.findElement(By.id("mensagem"));
+				return elemento.isDisplayed() ? elemento.getText() : null;
+			} catch (NoSuchElementException | StaleElementReferenceException e) {
+				return null;
+			}
+		});
 	}
 
 	private static boolean existe(String id) {

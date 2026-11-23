@@ -92,8 +92,25 @@ public class StorageManager implements Storable{
 				ObjectInputStream caronasInputStream = new ObjectInputStream(caronasFile)) {
 			carregaUsuarios(usuariosInputStream, listaUsuarios);
 			carregaCaronas(caronasInputStream, listaCaronas);
+			vinculaCaronasAosUsuarios(listaUsuarios, listaCaronas);
 		} catch (IOException e) {
 			LOGGER.log(Level.WARNING, "Erro ao carregar os dados: {0}", e.getMessage());
+		}
+	}
+
+	private static void vinculaCaronasAosUsuarios(List<Usuario> listaUsuarios, List<Carona> listaCaronas) {
+		for (int i = 0; i < listaCaronas.size(); i++) {
+			Carona caronaAtiva = listaCaronas.get(i);
+			for (Usuario usuario : listaUsuarios) {
+				if (!usuario.getUsername().equalsIgnoreCase(caronaAtiva.getHost().getUsername())) continue;
+				for (Carona caronaDoUsuario : usuario.getCaronas()) {
+					if (caronaDoUsuario.getID() == caronaAtiva.getID()) {
+						listaCaronas.set(i, caronaDoUsuario);
+						break;
+					}
+				}
+				break;
+			}
 		}
 	}
 

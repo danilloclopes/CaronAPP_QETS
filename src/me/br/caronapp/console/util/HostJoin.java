@@ -18,7 +18,7 @@ import me.br.caronapp.console.Console.Stage;
 import me.br.caronapp.usuario.Usuario;
 
 /*
- * Author: Sérgio Ricardo
+ * Author: Sï¿½rgio Ricardo
  */
 
 public class HostJoin {
@@ -56,7 +56,7 @@ public class HostJoin {
 		} while (campus == null);
 		
 		do {
-			LOGGER.log(Level.INFO, "Entre com as informações do local de {0}", (sentido == 1) ? "partida:" : "destino:");
+			LOGGER.log(Level.INFO, "Entre com as informaï¿½ï¿½es do local de {0}", (sentido == 1) ? "partida:" : "destino:");
 			posicao = definirPosicao(console);
 		} while (posicao == null);
 		
@@ -72,6 +72,8 @@ public class HostJoin {
 		if (passageiros < 1 || passageiros > 4) {
 			throw new IllegalArgumentException("A quantidade de passageiros deve ser de 1 a 4.");
 		}
+		if (usuario == null) throw new IllegalArgumentException("O motorista nao pode ser nulo.");
+		if (!Auxiliar.existe(usuario.getUsername())) Auxiliar.usuarios.add(usuario);
 		Rota rota = sentido == Rota.Sentido.IDA
 				? new Rota(endereco, campus) : new Rota(campus, endereco);
 		Auxiliar.criarCarona(new Carona(usuario, passageiros, dataHora, rota));
@@ -91,13 +93,13 @@ public class HostJoin {
 				if (carona == null) continue;
 				try {
 					if(join(carona, console.getUser())) {
-						LOGGER.info("Registro de participação efetuado com sucesso!");
+						LOGGER.info("Registro de participaï¿½ï¿½o efetuado com sucesso!");
 					} else {
 						LOGGER.info("Falha.");
 					}
 					
 				} catch (VagasExcedidasException e) {
-					LOGGER.info("Não há vagas disponíveis nessa carona...");
+					LOGGER.info("Nï¿½o hï¿½ vagas disponï¿½veis nessa carona...");
 				}
 			} while (carona == null);
 		}
@@ -137,12 +139,12 @@ public class HostJoin {
 			longitude = console.getScanner().nextDouble();
 		LOGGER.info("Nome da Rua: ");
 			nome = console.getScanner().next();
-		LOGGER.info("Número: ");
+		LOGGER.info("Nï¿½mero: ");
 			numero = console.getScanner().nextInt();
 		LOGGER.info("Cep: ");
 			cep = console.getScanner().next();
 		} catch (Exception e) {
-			LOGGER.info("Valor inválido...");
+			LOGGER.info("Valor invï¿½lido...");
 			console.getScanner().next();
 			return null;
 		}
@@ -163,7 +165,7 @@ public class HostJoin {
 			hora = console.getScanner().nextInt();
 			minuto = console.getScanner().nextInt();
 		} catch (InputMismatchException e) {
-			LOGGER.info("Data inválida...");
+			LOGGER.info("Data invï¿½lida...");
 			console.getScanner().next();
 			return null;
 		}
@@ -179,9 +181,9 @@ public class HostJoin {
 		int numeroDePassageiros;
 		try {
 			numeroDePassageiros = console.getScanner().nextInt();
-			if (numeroDePassageiros < 1 || numeroDePassageiros > 4) LOGGER.info("Quantidade inválida...");
+			if (numeroDePassageiros < 1 || numeroDePassageiros > 4) LOGGER.info("Quantidade invï¿½lida...");
 		} catch (Exception e) {
-			LOGGER.info("Quantidade inválida...");
+			LOGGER.info("Quantidade invï¿½lida...");
 			console.getScanner().next();
 			return -1;
 		}
@@ -192,9 +194,9 @@ public class HostJoin {
 		int sentido;
 		try {
 			sentido = console.getScanner().nextInt();
-			if (sentido != 1 && sentido != 2) LOGGER.info("Sentido inválido...");
+			if (sentido != 1 && sentido != 2) LOGGER.info("Sentido invï¿½lido...");
 		} catch (Exception e) {
-			LOGGER.info("Sentido inválido...");
+			LOGGER.info("Sentido invï¿½lido...");
 			console.getScanner().next();
 			return -1;
 		}
@@ -210,11 +212,11 @@ public class HostJoin {
 				}
 			}
 		} catch (Exception e) {
-			LOGGER.info("ID inválida...");
+			LOGGER.info("ID invï¿½lida...");
 			console.getScanner().next();
 			return null;
 		}
-		LOGGER.info("ID inválida...");
+		LOGGER.info("ID invï¿½lida...");
 		return null;
 	}
 }

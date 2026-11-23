@@ -21,6 +21,10 @@ public class Usuario implements Comparable<Usuario>, Serializable {
 	private ArrayList<Carona> historico;
 
 	public Usuario(String username, String name, String cpf, String senha) {
+		validarCampo(username, "username");
+		validarCampo(name, "name");
+		validarCampo(cpf, "cpf");
+		validarCampo(senha, "senha");
 		this.username = username;
 		this.name = name;
 		this.cpf = cpf;
@@ -30,8 +34,15 @@ public class Usuario implements Comparable<Usuario>, Serializable {
 		this.caronas = new ArrayList<Carona>();
 		this.historico = new ArrayList<Carona>();
 	}
+
+	private static void validarCampo(String valor, String campo) {
+		if (valor == null || valor.trim().isEmpty()) {
+			throw new IllegalArgumentException(campo + " nao pode ser nulo ou vazio");
+		}
+	}
 	
 	public boolean podeLogar(String username, String senha) {
+		if (username == null || senha == null) return false;
 		if (!username.equalsIgnoreCase(this.username)) return false;
 		return this.senha.equals(senha);
 	}

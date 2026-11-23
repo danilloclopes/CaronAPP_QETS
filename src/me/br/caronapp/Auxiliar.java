@@ -14,8 +14,15 @@ public class Auxiliar {
 	
 	/* Carona */
 	
-	public static void criarCarona(Carona c) {
-		caronasAtivas.add(c);
+	public static boolean criarCarona(Carona c) {
+		if (c == null || c.getHost() == null) return false;
+		for (Usuario usuario : usuarios) {
+			if (usuario.getUsername().equalsIgnoreCase(c.getHost().getUsername())) {
+				caronasAtivas.add(c);
+				return true;
+			}
+		}
+		return false;
 	}
 	
 	public static void removerCarona(Carona c) {
@@ -40,13 +47,19 @@ public class Auxiliar {
 	}
 	
 	public static Usuario register(String username, String name, String cpf, String senha) {
+		if (username == null || username.trim().isEmpty()) return null;
 		if (existe(username)) return null;
-		Usuario u = new Usuario(username, name, cpf, senha);
-		usuarios.add(u);
-		return u;
+		try {
+			Usuario u = new Usuario(username, name, cpf, senha);
+			usuarios.add(u);
+			return u;
+		} catch (IllegalArgumentException e) {
+			return null;
+		}
 	}
-	
+
 	public static boolean existe(String username) {
+		if (username == null) return false;
 		for (Usuario u : usuarios)
 			if (username.equalsIgnoreCase(u.getUsername())) return true;
 		return false;

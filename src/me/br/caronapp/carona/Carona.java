@@ -12,7 +12,7 @@ import me.br.caronapp.carona.Rota.Sentido;
 import me.br.caronapp.carona.excecoes.*;
 
 /*
- * Author: Sérgio Ricardo
+ * Author: Sï¿½rgio Ricardo
  * Modificado por Eperson Filho
  */
 
@@ -25,7 +25,7 @@ public class Carona implements Serializable {
 	private static int serial = 0;
 	
 	public enum Estado {ABERTO, AGUARDANDO, FECHADO, FINALIZADO};	// ABERTO: Aceita guests.
-	 																// AGUARDANDO, FECHADO e FINALIZADO: Não aceita guests.
+	 																// AGUARDANDO, FECHADO e FINALIZADO: Nï¿½o aceita guests.
 	
 	private Usuario host;
 	private ArrayList<Usuario> guests = new ArrayList<Usuario>();
@@ -42,6 +42,9 @@ public class Carona implements Serializable {
 
 	public Carona(Usuario host, int maximoGuests, Calendar dataHora, Rota rota) {
 		super();
+		validarHost(host);
+		validarMaximoGuests(maximoGuests);
+		validarDataHora(dataHora);
 		this.host = host;
 		this.maximoGuests = maximoGuests;
 		this.dataHora = dataHora;
@@ -52,6 +55,26 @@ public class Carona implements Serializable {
 		this.id = serial;
 		
 		this.host.addCarona(this);
+	}
+
+	private static void validarHost(Usuario host) {
+		if (host == null) throw new IllegalArgumentException("O host nao pode ser nulo");
+	}
+
+	private static void validarMaximoGuests(int maximoGuests) {
+		if (maximoGuests < 1 || maximoGuests > 4) {
+			throw new IllegalArgumentException("O numero de passageiros deve estar entre 1 e 4");
+		}
+	}
+
+	private static void validarDataHora(Calendar dataHora) {
+		if (dataHora == null) throw new IllegalArgumentException("A data da carona nao pode ser nula");
+		Calendar hoje = Calendar.getInstance();
+		if (dataHora.get(Calendar.YEAR) < hoje.get(Calendar.YEAR)
+				|| (dataHora.get(Calendar.YEAR) == hoje.get(Calendar.YEAR)
+						&& dataHora.get(Calendar.DAY_OF_YEAR) < hoje.get(Calendar.DAY_OF_YEAR))) {
+			throw new IllegalArgumentException("A data da carona nao pode estar no passado");
+		}
 	}
 	
 	public boolean adicionaPassageiro(Usuario user) throws VagasExcedidasException {
@@ -123,6 +146,10 @@ public class Carona implements Serializable {
 	}
 
 	public void setMaximoGuests(int maximoGuests) {
+		validarMaximoGuests(maximoGuests);
+		if (maximoGuests < guests.size()) {
+			throw new IllegalArgumentException("O numero de passageiros nao pode ser menor que os ja inscritos");
+		}
 		this.maximoGuests = maximoGuests;
 	}
 
@@ -131,6 +158,7 @@ public class Carona implements Serializable {
 	}
 
 	public void setDataHora(Calendar dataHora) {
+		validarDataHora(dataHora);
 		this.dataHora = dataHora;
 	}
 
