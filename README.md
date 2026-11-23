@@ -34,6 +34,7 @@ Evidências, limitações e revisão da geração com IA estão em [`docs/ai/int
 
 | Artefato | Localização |
 | --- | --- |
+| Plano de teste | [Google Docs](https://docs.google.com/document/d/1FSFp_FmcxB4HVQn61aRE9TdHVGx_MrsLQle18v1hbhA/edit?usp=sharing) |
 | Documento compartilhado do grupo (Google Docs) | [Abrir documento](https://docs.google.com/document/d/1ekOuJkdEYtPGt5Mn_Prw_icX7OnHMUNa8h7mTlUdT9g/edit?usp=sharing) |
 | Local de Testes | [Abrir documento](https://docs.google.com/document/d/1ekOuJkdEYtPGt5Mn_Prw_icX7OnHMUNa8h7mTlUdT9g/edit?usp=sharing) |
 | Classe testada por Ricardo | [`HostJoin.java`](src/me/br/caronapp/console/util/HostJoin.java) |
@@ -45,3 +46,4 @@ Evidências, limitações e revisão da geração com IA estão em [`docs/ai/int
 | Classe testada por Nicole | [`Console.java`](src/me/br/caronapp/console/Console.java) |
 | Testes unitários de Nicole | [`ConsoleTest.java`](test/me/br/caronapp/console/ConsoleTest.java) |
 | Registro de uso de IA | [`AI-LOG.md`](docs/ai/AI-LOG.md) |
+| Matriz de rastreabilidade RF01 a RF10 | [Google Docs](https://docs.google.com/document/d/1Fo2kVxpAJdI-_W6oFBJb8Wx-PQR6Rbog31n6TdDTDPA/edit?usp=sharing) |
