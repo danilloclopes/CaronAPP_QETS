@@ -174,3 +174,75 @@ Este documento registra as interações relevantes com ferramentas de IA Generat
 - **Resultado:** A IA adicionou a dependência do Selenium ao `pom.xml` e criou `CadastroLoginSeleniumTest`, com 7 casos (CT-S-SM-01 a 07): cadastro com sucesso, usuário duplicado, senha errada, usuário inexistente, login correto, campos obrigatórios e cadastro mantido após reiniciar o servidor. Cada teste sobe o `WebMain` numa porta livre, com dados em pasta temporária, e usa o Chrome sem janela (headless).
 - **Decisão:** Aceitei os testes. Não encontrei defeito nessas telas, então não abri Issue. Depois de enviar o commit com a mensagem errada, corrigi o nome dele.
 - **Validação:** Os 7 testes passaram (cerca de 21 s).
+
+---
+
+### Log #013 - Separação dos testes unitários e de integração de HostJoin
+
+- **Responsável:** Ricardo Tanaka
+- **Atividade:** Classificação e separação dos 89 casos existentes por nível de teste.
+- **Ferramenta:** OpenAI Codex, via ambiente local de desenvolvimento.
+- **Prompt/Instrução:** "vamos separar primeiro. separamos por arquivo?"
+- **Resultado:** Mantidos 12 casos de validação local em `HostJoinTest`, com Console simulado e Scanner em memória. Movidos 77 casos que exercitam domínio e registro reais para `HostJoinIntegrationTest`. Ajustados os perfis JaCoCo e PIT para executar ambas as suítes. Nenhum caso ou regra de produção foi alterado; não foi introduzida uma classe-base de testes nem nova dependência.
+- **Decisão:** O usuário autorizou a separação; a classificação e implementação foram realizadas pelo agente e estão disponíveis para revisão humana. Os fluxos host/join permanecem como integração; esta mudança não adiciona versões isoladas desses fluxos.
+- **Validação:** `mvn -o -Pestrutural-hostjoin verify`: 12 unitários e 77 de integração passaram. JaCoCo: 42/42 ramos e 384/384 instruções cobertos, considerando ambas as suítes. PIT: 65 mutantes, 64 mortos e um timeout (98,46% mortos; 100% detectados). O PIT exigiu execução fora do sandbox após bloqueio por permissão. `git diff --check` executado.
+- **Preservação:** Estado recebido antes desta alteração em `docs/ai/hostjoin-separacao/inicial/HostJoinTest.java`; resultado em `docs/ai/hostjoin-separacao/final/`. Esse estado inicial é o anterior à separação, não a primeira geração histórica com IA. A mudança consistiu na movimentação dos cenários e remoção do preparo de estado global dos unitários, preservando as entradas e asserções.
+- **Instruções e ferramentas:** Skill local ponytail; instruções do usuário para legibilidade e indentação; shell, Python para movimentação dos blocos, Maven, JUnit, Mockito, JaCoCo e PIT. Sem delegação a outros agentes.
+
+---
+
+### Log #014 - Integração incremental top-down no fluxo join
+
+- **Responsável:** Ricardo Tanaka
+- **Atividade:** Aplicação top-down à participação em caronas, a partir de HostJoin.
+- **Ferramenta:** OpenAI Codex, ambiente local.
+- **Prompt/Instrução :** temos que aplicar o top down no join. vamos começar com a carona simulada e depois testar com a real
+- **Resultado:** Criado `HostJoinTopDownTest` com quatro casos: sucesso nos dois sentidos, recusa e lotação. HostJoin e ListarCaronas reais chamam Carona, Usuario e Rota simulados. A etapa seguinte substitui os stubs pelo domínio real em HostJoinIntegrationTest. A listagem e o registro já são reais na etapa inicial; o escopo incremental é join, não host. README descreve componentes e comandos por etapa; perfis de métricas incluem as três suítes.
+- **Decisão:** Implementação do agente conforme solicitação do usuário, disponível para revisão humana. Reutilizados Mockito e os testes integrados existentes, sem alterar produção ou adicionar dependências.
+- **Validação:** A primeira execução com captura de logs falhou em uma asserção. Foi mantida uma referência forte ao Logger durante o teste para estabilizar a captura. Após a correção, os quatro casos passaram; o perfil estrutural também passou com os 93 casos. A integração real verifica efeitos no domínio; a etapa com stubs verifica delegação, mensagem e retorno ao lobby.
+- **Preservação:** Versão anterior à correção da captura em `docs/ai/hostjoin-topdown/inicial/HostJoinTopDownTest.java`; a versão final é mantida no teste ativo `test/me/br/caronapp/console/util/HostJoinTopDownTest.java`, que posteriormente incorporou a etapa com domínio real. A cópia intermediária foi removida a pedido do usuário. Não foram alteradas as regras da aplicação.
+- **Instruções e ferramentas:** Skill ponytail e regras de formatação do usuário; shell, Python, Maven, JUnit, Mockito, JaCoCo e PIT. Sem subagentes.
+
+---
+
+### Log #015 - Simplificação em dois arquivos de teste
+
+- **Responsável:** Ricardo Tanaka
+- **Atividade:** Consolidação das etapas de integração em HostJoinTopDownTest.
+- **Ferramenta:** OpenAI Codex, ambiente local.
+- **Prompt/Instrução:** simplifica isso aí. deixa os unitários num arquivo e juntar as duas etapas de integração no outro
+- **Resultado:** Mantido HostJoinTest com 12 casos. Reunidos os quatro casos com stubs e os 77 casos com domínio real em HostJoinTopDownTest, usando duas classes JUnit @Nested. Removido o arquivo ativo HostJoinIntegrationTest. Atualizados README e perfis Maven; PIT inclui as classes internas com HostJoinTopDownTest*. Produção e cenários preservados.
+- **Decisão:** Organização solicitada pelo usuário; implementação disponível para revisão humana. Mantidas as versões históricas de IA, sem sobrescrevê-las.
+- **Validação:** `mvn -o clean -Pestrutural-hostjoin verify` passou com 93 casos e 42/42 ramos cobertos. PIT passou com 64 mutantes mortos e um timeout entre 65 gerados (98,46% mortos; 100% detectados). `git diff --check` sem erros.
+- **Preservação:** Versão inicial top-down em `docs/ai/hostjoin-topdown/inicial/HostJoinTopDownTest.java`; resultado final no teste ativo `test/me/br/caronapp/console/util/HostJoinTopDownTest.java`. As cópias redundantes nas pastas `final` e `consolidado` de top-down foram removidas a pedido do usuário. Alteração organizacional: agrupamento dos corpos das classes existentes em duas etapas, sem remover asserções.
+- **Instruções e ferramentas:** Regras de formatação do usuário e skill ponytail; shell, Python, Maven, JUnit, JaCoCo e PIT; sem novas dependências ou subagentes.
+
+Nota de organização: a pedido de Ricardo, a cópia intermediária `docs/ai/hostjoin-separacao/final/HostJoinIntegrationTest.java` foi removida. Ela havia sido criada nesta sessão e ainda não estava versionada no Git. Os cenários permanecem no arquivo ativo `HostJoinTopDownTest.java`.
+
+---
+
+### Log #016 - Selenium para oferta de caronas
+
+- **Responsável:** Ricardo Tanaka
+- **Atividade:** Testes de sistema de ida/volta, campos e limites de passageiros.
+- **Ferramenta:** OpenAI Codex, ambiente local.
+- **Prompt/Instrução:** "cria ai, no folder de cima eu acho que ja criei antes, tenta achar e seguir meu padrao de codigo"
+- **Resultado:** Encontrado `../aulaselenium/src/test/java/exselenium/TestaCadastroAutomationExercise.java`, também presente em `../qualidade_teste2026.2-aulaselenium`. Criado HostJoinSeleniumTest com o mesmo estilo: JUnit 5, ChromeDriver, WebDriverWait, Select, By.id, nomes em português e helpers simples. Adicionado Selenium 4.20.0, mesma versão do exemplo, com escopo test. Cada caso inicia servidor em porta livre e armazenamento temporário, cadastra pela interface e restaura estado global ao terminar. Os 20 casos cobrem sentidos, passageiros 0/1/4/5, sete campos obrigatórios, valores numéricos inválidos e rua com espaços. Os testes só executam com `-Dselenium=true`.
+- **Decisão:** Implementação gerada conforme autorização, disponível para revisão humana. A data usa JavaScript apenas para preencher datetime-local sem depender do idioma; os formulários são enviados por clique normal, com validação HTML ativa. Não foram alteradas regras de produção. WebMain não chama HostJoin diretamente: são testes de sistema dos requisitos da oferta de caronas.
+- **Validação:** Primeira execução: 20 casos, uma falha causada pela leitura da mensagem antiga de cadastro antes do redirecionamento. Correção: esperar o texto esperado com ExpectedConditions.textToBe. Segunda execução: 20 casos, zero falhas, erros ou skips. Chrome 151 em headless, Selenium 4.20.0, driver local 151.0.7922.138; avisos de CDP não impediram operações WebDriver. Evidência em `relatorios/hostjoin/selenium/resultado.txt`. Regressão: `mvn -o '-Dtest=HostJoinTest,HostJoinTopDownTest*,WebMainTest' test`, 95 casos passaram. O seletor sem asterisco não incluiu as classes @Nested na execução combinada; corrigido o comando do README. `git diff --check` sem erros.
+- **Preservação:** Primeira versão em `docs/ai/hostjoin-selenium/inicial/HostJoinSeleniumTest.java`; final em `test/me/br/caronapp/web/HostJoinSeleniumTest.java`. Diferença: importação de ExpectedConditions e espera explícita do texto nas mensagens de criação e rejeição do servidor. Sem cópia redundante da versão final.
+- **Instruções e ferramentas:** Skill ponytail e regras de formatação do usuário; leitura dos exemplos locais, shell, Python, Maven, JUnit, Selenium e Chrome; sem subagentes. README contém comandos e resumo dos cenários para apoiar o relatório no Google Docs.
+
+---
+
+### Log #017 - Um arquivo por etapa de integração
+
+- **Responsável:** Ricardo Tanaka
+- **Atividade:** Separar as duas etapas da integração top-down de HostJoin em arquivos próprios.
+- **Ferramenta:** OpenAI Codex, ambiente local.
+- **Prompt/Instrução:** "separa em 2 arquivos entao"
+- **Resultado:** Os quatro casos com stubs passaram para `HostJoinDominioSimuladoTest` e os 35 com domínio real para `HostJoinDominioRealTest`. Os perfis de cobertura e mutação passaram a incluir as duas classes.
+- **Decisão:** Ricardo escolheu manter um arquivo por etapa para que cada uma pudesse ser identificada e executada separadamente.
+- **Validação:** Após compilação limpa, passaram os 39 casos de integração e os 14 unitários. O JaCoCo registrou 48 de 48 ramos cobertos. Dos 73 mutantes gerados pelo PIT, 72 foram mortos e um foi detectado por timeout.
+- **Preservação:** A [versão inicial da etapa com stubs](hostjoin-topdown/inicial/HostJoinTopDownTest.java) está arquivada. Os testes desta revisão estão nos arquivos de [domínio simulado](../../test/me/br/caronapp/console/util/HostJoinDominioSimuladoTest.java) e [domínio real](../../test/me/br/caronapp/console/util/HostJoinDominioRealTest.java).
+- **Instruções e ferramentas:** Regras de formatação do projeto, shell, Python, Maven, JUnit, JaCoCo e PIT.
