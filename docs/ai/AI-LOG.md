@@ -246,3 +246,29 @@ Nota de organização: a pedido de Ricardo, a cópia intermediária `docs/ai/hos
 - **Validação:** Após compilação limpa, passaram os 39 casos de integração e os 14 unitários. O JaCoCo registrou 48 de 48 ramos cobertos. Dos 73 mutantes gerados pelo PIT, 72 foram mortos e um foi detectado por timeout.
 - **Preservação:** A [versão inicial da etapa com stubs](hostjoin-topdown/inicial/HostJoinTopDownTest.java) está arquivada. Os testes desta revisão estão nos arquivos de [domínio simulado](../../test/me/br/caronapp/console/util/HostJoinDominioSimuladoTest.java) e [domínio real](../../test/me/br/caronapp/console/util/HostJoinDominioRealTest.java).
 - **Instruções e ferramentas:** Regras de formatação do projeto, shell, Python, Maven, JUnit, JaCoCo e PIT.
+
+---
+
+### Log #018 - Isolamento de testes unitários, integração, cobertura e mutação de CaronaManager
+
+- **Responsável:** Rafael
+- **Atividade:** Refatoração dos testes unitários de `CaronaManager` com isolamento completo de dependências, criação de testes de integração, aplicação de técnicas funcionais (equivalência e valores limite) e configuração dos perfis Maven de JaCoCo, PIT e SonarQube.
+- **Ferramenta:** Antigravity (agente de codificação assistida por IA).
+- **Prompt/Instrução:**
+  > Solicitação para planejar e executar as etapas da Entrega 2 referentes à classe `CaronaManager`: isolar dependências nos testes unitários, aplicar particionamento de equivalência e valores limite, criar testes de integração e atingir ao menos 80% de cobertura de arestas (JaCoCo) e 80% de escore de mutação (PIT), mantendo explicação detalhada para revisão do integrante.
+- **Resultado:** A versão anterior de `CaronaManagerTest` (12 testes, que mockava apenas `Console` e usava entidades reais) foi preservada em `docs/ai/caronamanager/inicial/CaronaManagerTest.java`. A versão final em `test/me/br/caronapp/console/util/CaronaManagerTest.java` foi refatorada para 25 execuções isolando `Console`, `Usuario` (incluindo stub explícito da sobrecarga `equals(Usuario)`) e `Carona` com Mockito, cobrindo lista vazia, listas homogêneas/mistas, IDs inválidos/limite (`-1`, `0`, `999`), confirmações limite (`-1`, `1`, `2` vs `0`), todos os estados de `Estado` e tratamento de `UsuarioNaoEncontradoException`. Foi criado `test/me/br/caronapp/console/util/CaronaManagerIntegrationTest.java` (5 testes com entidades reais de `Usuario`, `Carona`, `Rota`, `Campus` e `Posicao`) e adicionados os perfis `estrutural-caronamanager`, `mutacao-caronamanager` e `inspecao-caronamanager` no `pom.xml`.
+- **Decisão:** O integrante aprovou o plano de separação entre suíte unitária isolada e suíte de integração e revisou o roteiro técnico apresentado pela IA; os ajustes de código da própria classe `CaronaManager` foram mantidos pendentes até a captura do relatório inicial no SonarQube.
+- **Validação:** `mvn "-Dtest=CaronaManagerTest,CaronaManagerIntegrationTest" test` passou com 30 testes (25 unitários e 5 de integração, zero falhas/erros). `mvn verify -Pestrutural-caronamanager` registrou 22/23 ramos (95,65%), 173/180 instruções (96,11%) e 42/45 linhas (93,33%). `mvn test-compile org.pitest:pitest-maven:mutationCoverage -Pmutacao-caronamanager` gerou 29 mutantes, matou 28 (97% / 96,55%, zero sobreviventes; o único sem cobertura está no trecho morto `if (carona == null)` do método privado `verOpcoesCorrida`). Evidências em `relatorios/caronamanager/estrutural/caronamanager-jacoco.png` e `relatorios/caronamanager/mutacao/caronamanager-pit.png`.
+
+---
+
+### Log #019 - Testes de sistema com Selenium (participação em caronas) e consolidação do grupo
+
+- **Responsável:** Rafael
+- **Atividade:** Implementação dos testes de sistema em Selenium WebDriver sobre a interface web `WebMain` e consolidação dos resultados de cobertura (JaCoCo) e mutação (PIT) do grupo.
+- **Ferramenta:** Antigravity (agente de codificação assistida por IA).
+- **Prompt/Instrução:**
+  > Solicitação para concluir as etapas locais pendentes da Entrega 2: automatizar em Selenium os cenários de entrar na carona, impedir participação duplicada ou sem vagas, sair e conferir a liberação da vaga, além de consolidar os resultados de cobertura e mutação do grupo.
+- **Resultado:** Criado `test/me/br/caronapp/web/CaronaParticipacaoSeleniumTest.java` com 5 testes cobrindo: entrada em carona e redução de vagas (`ctSCm01`), bloqueio de participação duplicada pelo mesmo passageiro (`ctSCm02`), bloqueio de participação do próprio motorista (`ctSCm03`), recusa quando não há vagas (`ctSCm04`) e saída da carona com liberação da vaga para outro usuário (`ctSCm05`). Durante a validação inicial ocorreram duas falhas de sincronização entre submissões consecutivas no Chrome 157 (`StaleElementReferenceException` e leitura da mensagem anterior ao redirecionamento), corrigidas com um helper (`executarEAguardarMensagem`) baseado em marcador de página e espera explícita. Em seguida, foram reexecutados os perfis JaCoCo e PIT das classes já configuradas no repositório (`HostJoin`, `StorageManager` e `CaronaManager`) para consolidar os números.
+- **Decisão:** Mantido o arquivo de Selenium separado de `CadastroLoginSeleniumTest.java` (escopo de cadastro/login) e adotado o marcador em JavaScript para evitar a instabilidade do `stalenessOf` no Chrome 157 sem modificar `WebMain.java`.
+- **Validação:** `mvn "-Dtest=CaronaParticipacaoSeleniumTest" test` passou com 5 testes, 0 falhas e 0 erros. Os perfis JaCoCo e PIT das classes `HostJoin`, `StorageManager` e `CaronaManager` executaram com sucesso e alimentaram a tabela consolidada do grupo.
