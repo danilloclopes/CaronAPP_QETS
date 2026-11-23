@@ -1,6 +1,8 @@
 package me.br.caronapp.console;
 
 import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import me.br.caronapp.console.util.CaronaManager;
 import me.br.caronapp.console.util.HostJoin;
@@ -14,6 +16,7 @@ import me.br.caronapp.usuario.Usuario;
  *  */
 
 public class Console {
+	private static final Logger LOGGER = Logger.getLogger(Console.class.getName());
 	
 	public enum Stage {
 		/* COMANDOS INICIAIS */
@@ -33,18 +36,23 @@ public class Console {
 		HALT;
 	}
 	
-	private Scanner scan;
+	private final Scanner scan;
 	private Stage stage;
 	private Usuario usuario;
 	
 	public Console() {
-		scan = new Scanner(System.in);
+		this(new Scanner(System.in));
+	}
+
+	Console(Scanner scan) {
+		this.scan = scan;
 		this.logout();
 	}
 	
 	public boolean draw() {
-		if (usuario != null)
-			System.out.println("-----> Usuario: " + this.usuario.getName());
+		if (usuario != null) {
+			LOGGER.log(Level.INFO, "-----> Usuario: {0}", usuario.getName());
+		}
 		switch (stage) {
 		case LOGIN_REGISTRO:
 			LoginRegistro.loginRegistro(this);
@@ -76,7 +84,7 @@ public class Console {
 			break;
 		/* OUTROS */
 		default:
-			System.out.println("Finalizando console...");
+			LOGGER.info("Finalizando console...");
 			scan.close();
 			return false;
 		}
@@ -94,8 +102,8 @@ public class Console {
 	}
 
 	public Stage getStage() {
-    return this.stage;
-}
+		return this.stage;
+	}
 	
 	public Usuario getUser() {
 		return usuario;
@@ -106,7 +114,7 @@ public class Console {
 	}
 	
 	public boolean isAdm() {
-		return usuario.isAdm();
+		return usuario != null && usuario.isAdm();
 	}
 	
 	public void logout() {
