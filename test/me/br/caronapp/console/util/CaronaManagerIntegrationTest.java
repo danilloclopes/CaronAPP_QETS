@@ -8,9 +8,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
 import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
+import java.util.logging.StreamHandler;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,25 +41,42 @@ import me.br.caronapp.usuario.Usuario;
 public class CaronaManagerIntegrationTest {
 
     private Scanner scanner;
-    private final ByteArrayOutputStream outputCapture = new ByteArrayOutputStream();
-    private PrintStream originalOut;
+    private ByteArrayOutputStream outputCapture;
+    private final Logger logger = Logger.getLogger(CaronaManager.class.getName());
+    private StreamHandler handler;
+    private boolean usarHandlersOriginais;
+    private Level nivelOriginal;
     private int serialOriginal;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws UnsupportedEncodingException {
         serialOriginal = Carona.getSerial();
         Carona.setSerial(0);
-        originalOut = System.out;
-        System.setOut(new PrintStream(outputCapture));
+        outputCapture = new ByteArrayOutputStream();
+        handler = new StreamHandler(outputCapture, new SimpleFormatter());
+        handler.setEncoding(StandardCharsets.UTF_8.name());
+        usarHandlersOriginais = logger.getUseParentHandlers();
+        nivelOriginal = logger.getLevel();
+        logger.setUseParentHandlers(false);
+        logger.setLevel(Level.INFO);
+        logger.addHandler(handler);
     }
 
     @AfterEach
     void tearDown() {
+        logger.removeHandler(handler);
+        handler.close();
+        logger.setUseParentHandlers(usarHandlersOriginais);
+        logger.setLevel(nivelOriginal);
         if (scanner != null) {
             scanner.close();
         }
-        System.setOut(originalOut);
         Carona.setSerial(serialOriginal);
+    }
+
+    private String saida() {
+        handler.flush();
+        return outputCapture.toString(StandardCharsets.UTF_8);
     }
 
     private Console consoleComEntrada(String input, Usuario user) {
@@ -91,7 +113,7 @@ public class CaronaManagerIntegrationTest {
 
         CaronaManager.verCorridas(consoleComEntrada(String.valueOf(caronaDono.getID()), usuario));
 
-        String saida = outputCapture.toString();
+        String saida = saida();
         int idxDono = saida.indexOf("Caronas nas quais voce eh dono:");
         int idxPass = saida.indexOf("Caronas nas quais voce eh passageiro:");
         String linhaDono = caronaDono.getID() + " - Rafael Silva - " + caronaDono;
@@ -180,7 +202,7 @@ public class CaronaManagerIntegrationTest {
         Console console = consoleComEntrada(String.valueOf(caronaA.getID()), donoB);
         CaronaManager.verCorridas(console);
 
-        assertTrue(outputCapture.toString().contains("Carona nao encontrada..."));
+        assertTrue(saida().contains("Carona nao encontrada..."));
         assertEquals(Estado.ABERTO, caronaA.getEstado());
         assertEquals(1, donoB.getCaronas().size());
         assertTrue(donoB.getCaronas().contains(caronaB));

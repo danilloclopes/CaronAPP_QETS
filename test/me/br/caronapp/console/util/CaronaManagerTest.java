@@ -9,10 +9,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
+import java.util.logging.StreamHandler;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,26 +43,38 @@ import me.br.caronapp.usuario.Usuario;
 public class CaronaManagerTest {
 
     private Scanner scanner;
-    private final ByteArrayOutputStream outputCapture = new ByteArrayOutputStream();
-    private final ByteArrayOutputStream errCapture = new ByteArrayOutputStream();
-    private PrintStream originalOut;
-    private PrintStream originalErr;
+    private ByteArrayOutputStream outputCapture;
+    private final Logger logger = Logger.getLogger(CaronaManager.class.getName());
+    private StreamHandler handler;
+    private boolean usarHandlersOriginais;
+    private Level nivelOriginal;
 
     @BeforeEach
-    void setUp() {
-        originalOut = System.out;
-        originalErr = System.err;
-        System.setOut(new PrintStream(outputCapture));
-        System.setErr(new PrintStream(errCapture));
+    void setUp() throws UnsupportedEncodingException {
+        outputCapture = new ByteArrayOutputStream();
+        handler = new StreamHandler(outputCapture, new SimpleFormatter());
+        handler.setEncoding(StandardCharsets.UTF_8.name());
+        usarHandlersOriginais = logger.getUseParentHandlers();
+        nivelOriginal = logger.getLevel();
+        logger.setUseParentHandlers(false);
+        logger.setLevel(Level.INFO);
+        logger.addHandler(handler);
     }
 
     @AfterEach
     void tearDown() {
+        logger.removeHandler(handler);
+        handler.close();
+        logger.setUseParentHandlers(usarHandlersOriginais);
+        logger.setLevel(nivelOriginal);
         if (scanner != null) {
             scanner.close();
         }
-        System.setOut(originalOut);
-        System.setErr(originalErr);
+    }
+
+    private String saida() {
+        handler.flush();
+        return outputCapture.toString(StandardCharsets.UTF_8);
     }
 
     private Console mockConsole(String input, Usuario user) {
@@ -100,7 +117,7 @@ public class CaronaManagerTest {
 
         CaronaManager.verCorridas(console);
 
-        String saida = outputCapture.toString();
+        String saida = saida();
         assertTrue(saida.contains("Caronas nas quais voce eh dono:"));
         assertTrue(saida.contains("Caronas nas quais voce eh passageiro:"));
         assertTrue(saida.contains("Digite um ID de carona:"));
@@ -120,7 +137,7 @@ public class CaronaManagerTest {
 
         CaronaManager.verCorridas(console);
 
-        String saida = outputCapture.toString();
+        String saida = saida();
         int idxDono = saida.indexOf("Caronas nas quais voce eh dono:");
         int idxPassageiro = saida.indexOf("Caronas nas quais voce eh passageiro:");
         int idxC1 = saida.indexOf("1 - Carlos Dono - Praia Vermelha");
@@ -146,7 +163,7 @@ public class CaronaManagerTest {
 
         CaronaManager.verCorridas(console);
 
-        String saida = outputCapture.toString();
+        String saida = saida();
         int idxPassageiro = saida.indexOf("Caronas nas quais voce eh passageiro:");
         int idxC1 = saida.indexOf("10 - Host Um - Valonguinho");
         int idxC2 = saida.indexOf("20 - Host Dois - Praia Vermelha");
@@ -174,7 +191,7 @@ public class CaronaManagerTest {
 
         CaronaManager.verCorridas(console);
 
-        String saida = outputCapture.toString();
+        String saida = saida();
         int idxDono = saida.indexOf("Caronas nas quais voce eh dono:");
         int idxPass = saida.indexOf("Caronas nas quais voce eh passageiro:");
         int idxDigite = saida.indexOf("Digite um ID de carona:");
@@ -199,7 +216,7 @@ public class CaronaManagerTest {
 
         CaronaManager.verCorridas(console);
 
-        assertTrue(outputCapture.toString().contains("Carona nao encontrada..."));
+        assertTrue(saida().contains("Carona nao encontrada..."));
         verify(carona, never()).setEstado(any());
         verify(console).setStage(Stage.LOBBY);
     }
@@ -216,7 +233,7 @@ public class CaronaManagerTest {
 
         CaronaManager.verCorridas(console);
 
-        assertTrue(outputCapture.toString().contains("Vai partir agora? (1 - sim / 0 - nao)"));
+        assertTrue(saida().contains("Vai partir agora? (1 - sim / 0 - nao)"));
         verify(carona).setEstado(Estado.FECHADO);
         verify(console).setStage(Stage.LOBBY);
     }
@@ -232,7 +249,7 @@ public class CaronaManagerTest {
 
         CaronaManager.verCorridas(console);
 
-        assertTrue(outputCapture.toString().contains("Vai partir agora? (1 - sim / 0 - nao)"));
+        assertTrue(saida().contains("Vai partir agora? (1 - sim / 0 - nao)"));
         verify(carona, never()).setEstado(any());
         verify(console).setStage(Stage.LOBBY);
     }
@@ -249,7 +266,7 @@ public class CaronaManagerTest {
 
         CaronaManager.verCorridas(console);
 
-        assertTrue(outputCapture.toString().contains("Ja chegou no ponto? Deseja finalizar? (1 - sim / 0 - nao)"));
+        assertTrue(saida().contains("Ja chegou no ponto? Deseja finalizar? (1 - sim / 0 - nao)"));
         verify(carona).setEstado(Estado.FINALIZADO);
         verify(console).setStage(Stage.LOBBY);
     }
@@ -265,7 +282,7 @@ public class CaronaManagerTest {
 
         CaronaManager.verCorridas(console);
 
-        assertTrue(outputCapture.toString().contains("Ja chegou no ponto? Deseja finalizar? (1 - sim / 0 - nao)"));
+        assertTrue(saida().contains("Ja chegou no ponto? Deseja finalizar? (1 - sim / 0 - nao)"));
         verify(carona, never()).setEstado(any());
         verify(console).setStage(Stage.LOBBY);
     }
@@ -282,7 +299,7 @@ public class CaronaManagerTest {
 
         CaronaManager.verCorridas(console);
 
-        String saida = outputCapture.toString();
+        String saida = saida();
         assertTrue(saida.contains("Sem op") && saida.contains("dispon"));
         verify(carona, never()).setEstado(any());
         verify(console).setStage(Stage.LOBBY);
@@ -302,7 +319,7 @@ public class CaronaManagerTest {
 
         CaronaManager.verCorridas(console);
 
-        assertTrue(outputCapture.toString().contains("Deseja sair dessa corrida? (1 - sim / 0 - nao)"));
+        assertTrue(saida().contains("Deseja sair dessa corrida? (1 - sim / 0 - nao)"));
         verify(carona).removePassageiro(passageiro);
         verify(console).setStage(Stage.LOBBY);
     }
@@ -319,7 +336,7 @@ public class CaronaManagerTest {
 
         CaronaManager.verCorridas(console);
 
-        assertTrue(outputCapture.toString().contains("Deseja sair dessa corrida? (1 - sim / 0 - nao)"));
+        assertTrue(saida().contains("Deseja sair dessa corrida? (1 - sim / 0 - nao)"));
         verify(carona, never()).removePassageiro(any(Usuario.class));
         verify(console).setStage(Stage.LOBBY);
     }
@@ -339,7 +356,9 @@ public class CaronaManagerTest {
 
         CaronaManager.verCorridas(console);
 
-        assertTrue(errCapture.toString().contains("UsuarioNaoEncontradoException"));
+        String saida = saida();
+        assertTrue(saida.contains("Nao foi possivel remover o passageiro da carona."));
+        assertTrue(saida.contains("UsuarioNaoEncontradoException"));
         verify(carona).removePassageiro(passageiro);
         verify(console).setStage(Stage.LOBBY);
     }
@@ -357,7 +376,7 @@ public class CaronaManagerTest {
 
         CaronaManager.verCorridas(console);
 
-        String saida = outputCapture.toString();
+        String saida = saida();
         assertTrue(saida.contains("Sem op") && saida.contains("dispon"));
         verify(carona, never()).removePassageiro(any(Usuario.class));
         verify(console).setStage(Stage.LOBBY);
