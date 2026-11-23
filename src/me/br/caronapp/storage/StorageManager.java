@@ -99,12 +99,16 @@ public class StorageManager implements Storable{
 
 	private static void carregaUsuarios(ObjectInputStream entrada, List<Usuario> listaUsuarios) throws IOException {
 		try {
-			while (true) {
-				listaUsuarios.add((Usuario) entrada.readObject());
+			boolean fimDoArquivo = false;
+			while (!fimDoArquivo) {
+				try {
+					listaUsuarios.add((Usuario) entrada.readObject());
+				} catch (EOFException e) {
+					// EOFException e o fim normal do arquivo: todos os usuarios ja foram lidos.
+					LOGGER.log(Level.FINE, "Fim do arquivo de usuarios", e);
+					fimDoArquivo = true;
+				}
 			}
-		} catch (EOFException e) {
-			// EOFException e o fim normal do arquivo: todos os usuarios ja foram lidos.
-			LOGGER.log(Level.FINE, "Fim do arquivo de usuarios", e);
 		} catch (ClassNotFoundException e) {
 			LOGGER.log(Level.SEVERE, "Classe nao encontrada ao ler usuarios: {0}", e.getMessage());
 		}
@@ -113,12 +117,22 @@ public class StorageManager implements Storable{
 	private static void carregaCaronas(ObjectInputStream entrada, List<Carona> listaCaronas) throws IOException {
 		try {
 			Carona.setSerial(entrada.readInt());
-			while (true) {
-				listaCaronas.add((Carona) entrada.readObject());
-			}
 		} catch (EOFException e) {
-			// EOFException e o fim normal do arquivo: todas as caronas ja foram lidas.
-			LOGGER.log(Level.FINE, "Fim do arquivo de caronas", e);
+			// Arquivo sem o serial (vazio): nao ha caronas para ler.
+			LOGGER.log(Level.FINE, "Arquivo de caronas sem serial", e);
+			return;
+		}
+		try {
+			boolean fimDoArquivo = false;
+			while (!fimDoArquivo) {
+				try {
+					listaCaronas.add((Carona) entrada.readObject());
+				} catch (EOFException e) {
+					// EOFException e o fim normal do arquivo: todas as caronas ja foram lidas.
+					LOGGER.log(Level.FINE, "Fim do arquivo de caronas", e);
+					fimDoArquivo = true;
+				}
+			}
 		} catch (ClassNotFoundException e) {
 			LOGGER.log(Level.SEVERE, "Classe nao encontrada ao ler caronas: {0}", e.getMessage());
 		}
